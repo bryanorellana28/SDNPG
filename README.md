@@ -16,18 +16,7 @@ Aplicación web construida con [Next.js](https://nextjs.org/) y [Prisma](https:/
 2. Instalar dependencias:
    ```bash
    npm install
-   ```
-3. Crear las tablas de la base de datos:
-   ```bash
-   npx prisma db push
-   ```
-4. Sembrar usuarios iniciales (administrador y operador):
-   ```bash
-   npm run seed
-   ```
-5. Iniciar la aplicación en modo desarrollo:
-   ```bash
-   npm run dev
+
    ```
 
 ## Rutas
