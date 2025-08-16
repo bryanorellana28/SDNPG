@@ -17,7 +17,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!valid) {
     return res.status(401).json({ message: 'Invalid credentials' });
   }
-  const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || 'secret', { expiresIn: '1h' });
+  const token = jwt.sign(
+    { userId: user.id, role: user.role },
+    process.env.JWT_SECRET || 'secret',
+    { expiresIn: '1h' }
+  );
   res.setHeader('Set-Cookie', serialize('token', token, { path: '/', httpOnly: true }));
   return res.status(200).json({ message: 'ok' });
 }

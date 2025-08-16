@@ -4,7 +4,8 @@ Aplicación web construida con [Next.js](https://nextjs.org/) y [Prisma](https:/
 
 ## Características
 
-- Login con usuario por defecto `admin`/`admin`.
+- Usuarios con roles `ADMIN` y `OPERATOR`.
+- Login con credenciales por defecto `admin`/`admin` y `operator`/`operator`.
 - Autenticación basada en JWT almacenado en cookie HTTP-only.
 - Dashboard general accesible solo para usuarios autenticados.
 - Estilos con [Bootstrap 5](https://getbootstrap.com/).
@@ -12,15 +13,23 @@ Aplicación web construida con [Next.js](https://nextjs.org/) y [Prisma](https:/
 ## Configuración
 
 1. Copiar `.env.example` a `.env` y ajustar `DATABASE_URL` y `JWT_SECRET`.
-2. Ejecutar las migraciones y generar el cliente de Prisma:
+2. Instalar dependencias:
    ```bash
-   npx prisma migrate dev
+   npm install
    ```
-3. Sembrar el usuario administrador:
+3. Generar el cliente de Prisma:
+   ```bash
+   npx prisma generate
+   ```
+4. Crear las tablas de la base de datos:
+   ```bash
+   npx prisma db push
+   ```
+5. Sembrar usuarios iniciales (administrador y operador):
    ```bash
    npm run seed
    ```
-4. Iniciar la aplicación:
+6. Iniciar la aplicación en modo desarrollo:
    ```bash
    npm run dev
    ```
