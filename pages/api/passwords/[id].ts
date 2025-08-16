@@ -16,6 +16,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
+  if (req.method === 'GET') {
+    const entry = await prisma.credential.findUnique({ where: { id: Number(id) } });
+    return res.status(200).json(entry);
+  }
+
   if (req.method === 'PUT') {
     const { username, password, description } = req.body;
     const entry = await prisma.credential.update({

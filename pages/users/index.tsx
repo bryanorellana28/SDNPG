@@ -2,66 +2,68 @@ import { GetServerSideProps } from 'next';
 import { parse } from 'cookie';
 import jwt from 'jsonwebtoken';
 import { useEffect, useState } from 'react';
-import Sidebar from '../components/Sidebar';
+import Sidebar from '../../components/Sidebar';
 
-interface Entry {
+interface User {
   id: number;
   username: string;
-  password: string;
-  description: string;
+  role: string;
 }
 
-export default function Passwords({ role }: { role: string }) {
-  const [entries, setEntries] = useState<Entry[]>([]);
+export default function Users({ role }: { role: string }) {
+  const [users, setUsers] = useState<User[]>([]);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [description, setDescription] = useState('');
+  const [userRole, setUserRole] = useState('OPERATOR');
+  const [search, setSearch] = useState('');
 
-  const fetchEntries = async () => {
-    const res = await fetch('/api/passwords');
+  const fetchUsers = async () => {
+    const res = await fetch('/api/users');
     const data = await res.json();
-    setEntries(data);
+    setUsers(data);
   };
 
   useEffect(() => {
-    fetchEntries();
+    fetchUsers();
   }, []);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    await fetch('/api/passwords', {
+    await fetch('/api/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password, description }),
+      body: JSON.stringify({ username, password, role: userRole }),
     });
     setUsername('');
     setPassword('');
-    setDescription('');
-    fetchEntries();
+    setUserRole('OPERATOR');
+    fetchUsers();
   };
 
   const handleDelete = async (id: number) => {
-    await fetch(`/api/passwords/${id}`, { method: 'DELETE' });
-    fetchEntries();
+    await fetch(`/api/users/${id}`, { method: 'DELETE' });
+    fetchUsers();
   };
 
-  const handleEdit = async (e: Entry) => {
-    const newUsername = prompt('Usuario', e.username) || e.username;
-    const newPassword = prompt('Contraseña', e.password) || e.password;
-    const newDescription = prompt('Descripción', e.description) || e.description;
-    await fetch(`/api/passwords/${e.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: newUsername, password: newPassword, description: newDescription }),
-    });
-    fetchEntries();
+  const handleEdit = (u: User) => {
+    window.location.href = `/users/${u.id}`;
   };
+
+  const filtered = users.filter(u =>
+    Object.values(u).some(v => v.toString().toLowerCase().includes(search.toLowerCase()))
+  );
 
   return (
     <div className="d-flex">
       <Sidebar role={role} />
       <div className="p-4 flex-grow-1">
-        <h2>Contraseñas</h2>
+        <h2>Usuarios</h2>
+        <input
+          className="form-control mb-3"
+          placeholder="Buscar"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
         <form className="mb-3" onSubmit={handleAdd}>
           <div className="mb-2">
             <input
@@ -74,6 +76,7 @@ export default function Passwords({ role }: { role: string }) {
           </div>
           <div className="mb-2">
             <input
+              type="password"
               className="form-control"
               value={password}
               onChange={e => setPassword(e.target.value)}
@@ -82,13 +85,14 @@ export default function Passwords({ role }: { role: string }) {
             />
           </div>
           <div className="mb-2">
-            <input
-              className="form-control"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              placeholder="Descripción"
-              required
-            />
+            <select
+              className="form-select"
+              value={userRole}
+              onChange={e => setUserRole(e.target.value)}
+            >
+              <option value="ADMIN">ADMIN</option>
+              <option value="OPERATOR">OPERATOR</option>
+            </select>
           </div>
           <button className="btn btn-primary" type="submit">
             Agregar
@@ -98,27 +102,25 @@ export default function Passwords({ role }: { role: string }) {
           <thead>
             <tr>
               <th>Usuario</th>
-              <th>Contraseña</th>
-              <th>Descripción</th>
+              <th>Rol</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {entries.map(e => (
-              <tr key={e.id}>
-                <td>{e.username}</td>
-                <td>{e.password}</td>
-                <td>{e.description}</td>
+            {filtered.map(u => (
+              <tr key={u.id}>
+                <td>{u.username}</td>
+                <td>{u.role}</td>
                 <td>
                   <button
                     className="btn btn-sm btn-secondary me-2"
-                    onClick={() => handleEdit(e)}
+                    onClick={() => handleEdit(u)}
                   >
                     Editar
                   </button>
                   <button
                     className="btn btn-sm btn-danger"
-                    onClick={() => handleDelete(e.id)}
+                    onClick={() => handleDelete(u.id)}
                   >
                     Eliminar
                   </button>

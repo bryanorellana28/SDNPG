@@ -1,6 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '../../../lib/prisma';
-import bcrypt from 'bcryptjs';
 import { parse } from 'cookie';
 import jwt from 'jsonwebtoken';
 
@@ -9,33 +8,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const cookies = parse(req.headers.cookie || '');
   const token = cookies.token || '';
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
-    if (payload.role !== 'ADMIN') {
-      return res.status(403).json({ message: 'Forbidden' });
-    }
+    jwt.verify(token, process.env.JWT_SECRET || 'secret');
   } catch {
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
   if (req.method === 'GET') {
-    const user = await prisma.user.findUnique({ where: { id: Number(id) } });
-    return res.status(200).json(user);
+    const site = await prisma.site.findUnique({ where: { id: Number(id) } });
+    return res.status(200).json(site);
   }
 
   if (req.method === 'PUT') {
-    const { username, password, role } = req.body;
-    const data: any = { username, role };
-    if (password) {
-      data.password = await bcrypt.hash(password, 10);
-    }
-    const user = await prisma.user.update({
+    const { nombre, clave, ubicacion, zona, direccion } = req.body;
+    const site = await prisma.site.update({
       where: { id: Number(id) },
-      data,
+      data: { nombre, clave, ubicacion, zona, direccion },
     });
-    return res.status(200).json(user);
+    return res.status(200).json(site);
   }
   if (req.method === 'DELETE') {
-    await prisma.user.delete({ where: { id: Number(id) } });
+    await prisma.site.delete({ where: { id: Number(id) } });
     return res.status(204).end();
   }
   res.setHeader('Allow', 'PUT,DELETE');
