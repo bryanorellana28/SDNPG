@@ -27,3 +27,12 @@ model Credential {
   password    String
   description String
 }
+
+model Site {
+  id        Int    @id @default(autoincrement())
+  nombre    String
+  clave     String
+  ubicacion String
+  zona      String
+  direccion String
+}
