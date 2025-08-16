@@ -20,3 +20,10 @@ model User {
   password String
   role     Role   @default(ADMIN)
 }
+
+model Credential {
+  id          Int    @id @default(autoincrement())
+  username    String
+  password    String
+  description String
+}
