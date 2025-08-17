@@ -23,6 +23,7 @@ export default function Sidebar({ role }: SidebarProps) {
         <div className="ms-3 d-flex flex-column">
           <Link className="btn btn-link text-start" href="/equipos">Equipos</Link>
           <Link className="btn btn-link text-start" href="/sites">Sitios</Link>
+          <Link className="btn btn-link text-start" href="/backups">Backups</Link>
         </div>
       )}
 
