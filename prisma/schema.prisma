@@ -26,6 +26,7 @@ model Credential {
   username    String
   password    String
   description String
+  equipments  Equipment[]
 }
 
 model Site {
@@ -35,4 +36,18 @@ model Site {
   ubicacion String
   zona      String
   direccion String
+  equipments Equipment[]
+}
+
+model Equipment {
+  id           Int         @id @default(autoincrement())
+  ip           String
+  chassis      String
+  serial       String
+  version      String
+  type         String
+  site         Site?       @relation(fields: [siteId], references: [id])
+  siteId       Int?
+  credential   Credential? @relation(fields: [credentialId], references: [id])
+  credentialId Int?
 }

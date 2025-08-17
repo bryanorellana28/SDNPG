@@ -3,6 +3,7 @@ import { parse } from 'cookie';
 import jwt from 'jsonwebtoken';
 import { useEffect, useState } from 'react';
 import Sidebar from '../../components/Sidebar';
+import SearchBar from '../../components/SearchBar';
 
 interface Site {
   id: number;
@@ -61,34 +62,12 @@ export default function Sites({ role }: { role: string }) {
       <Sidebar role={role} />
       <div className="p-4 flex-grow-1">
         <h2>Sitios</h2>
-        <input
-          className="form-control mb-3"
-          placeholder="Buscar"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
-        <form className="mb-3" onSubmit={handleAdd}>
-          <div className="row g-2">
-            <div className="col">
-              <input className="form-control" name="nombre" value={form.nombre} onChange={handleChange} placeholder="Nombre" required />
-            </div>
-            <div className="col">
-              <input className="form-control" name="clave" value={form.clave} onChange={handleChange} placeholder="Clave" required />
-            </div>
-          </div>
-          <div className="row g-2 mt-2">
-            <div className="col">
-              <input className="form-control" name="ubicacion" value={form.ubicacion} onChange={handleChange} placeholder="Ubicación" required />
-            </div>
-            <div className="col">
-              <input className="form-control" name="zona" value={form.zona} onChange={handleChange} placeholder="Zona" required />
-            </div>
-          </div>
-          <div className="mt-2">
-            <input className="form-control" name="direccion" value={form.direccion} onChange={handleChange} placeholder="Dirección" required />
-          </div>
-          <button className="btn btn-primary mt-2" type="submit">Agregar</button>
-        </form>
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <SearchBar value={search} onChange={setSearch} />
+          <button className="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#addSite">
+            Agregar
+          </button>
+        </div>
         <table className="table">
           <thead>
             <tr>
@@ -120,6 +99,36 @@ export default function Sites({ role }: { role: string }) {
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="offcanvas offcanvas-end" tabIndex={-1} id="addSite">
+        <div className="offcanvas-header">
+          <h5 className="offcanvas-title">Agregar Sitio</h5>
+          <button type="button" className="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div className="offcanvas-body">
+          <form onSubmit={handleAdd}>
+            <div className="row g-2">
+              <div className="col">
+                <input className="form-control" name="nombre" value={form.nombre} onChange={handleChange} placeholder="Nombre" required />
+              </div>
+              <div className="col">
+                <input className="form-control" name="clave" value={form.clave} onChange={handleChange} placeholder="Clave" required />
+              </div>
+            </div>
+            <div className="row g-2 mt-2">
+              <div className="col">
+                <input className="form-control" name="ubicacion" value={form.ubicacion} onChange={handleChange} placeholder="Ubicación" required />
+              </div>
+              <div className="col">
+                <input className="form-control" name="zona" value={form.zona} onChange={handleChange} placeholder="Zona" required />
+              </div>
+            </div>
+            <div className="mt-2">
+              <input className="form-control" name="direccion" value={form.direccion} onChange={handleChange} placeholder="Dirección" required />
+            </div>
+            <button className="btn btn-primary mt-2" type="submit">Agregar</button>
+          </form>
+        </div>
       </div>
     </div>
   );
