@@ -15,40 +15,75 @@ export default function Sidebar({ role }: SidebarProps) {
   };
 
   return (
-    <div className="d-flex flex-column bg-light p-3" style={{ width: '250px', minHeight: '100vh' }}>
-      <button className="btn btn-link text-start" onClick={() => setShowInventory(!showInventory)}>
-        Inventario
-      </button>
-      {showInventory && (
-        <div className="ms-3 d-flex flex-column">
-          <Link className="btn btn-link text-start" href="/equipos">Equipos</Link>
-          <Link className="btn btn-link text-start" href="/sites">Sitios</Link>
-          <Link className="btn btn-link text-start" href="/backups">Backups</Link>
-        </div>
-      )}
-
-      {role === 'ADMIN' && (
-        <>
+    <div
+      className="d-flex flex-column flex-shrink-0 p-3 bg-light"
+      style={{ width: '280px', minHeight: '100vh' }}
+    >
+      <Link
+        href="/dashboard"
+        className="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-dark text-decoration-none"
+      >
+        <span className="fs-4">SDNPG</span>
+      </Link>
+      <hr />
+      <ul className="nav nav-pills flex-column mb-auto">
+        <li className="nav-item">
           <button
-            className="btn btn-link text-start mt-3"
-            onClick={() => setShowAdmin(!showAdmin)}
+            className="nav-link text-start w-100 bg-transparent border-0"
+            onClick={() => setShowInventory(!showInventory)}
           >
-            &#9881; Administración
+            Inventario
           </button>
-          {showAdmin && (
-            <div className="ms-3 d-flex flex-column">
-              <Link className="btn btn-link text-start" href="/users">Gestionar Usuarios</Link>
-              <Link className="btn btn-link text-start" href="/passwords">Gestionar Contraseñas</Link>
-            </div>
+          {showInventory && (
+            <ul className="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+              <li>
+                <Link href="/equipos" className="nav-link link-dark ms-3">
+                  Equipos
+                </Link>
+              </li>
+              <li>
+                <Link href="/sites" className="nav-link link-dark ms-3">
+                  Sitios
+                </Link>
+              </li>
+              <li>
+                <Link href="/backups" className="nav-link link-dark ms-3">
+                  Backups
+                </Link>
+              </li>
+            </ul>
           )}
-        </>
-      )}
+        </li>
 
-      <div className="mt-auto pt-3">
-        <button className="btn btn-danger w-100" onClick={handleLogout}>
-          Logout
-        </button>
-      </div>
+        {role === 'ADMIN' && (
+          <li className="nav-item mt-3">
+            <button
+              className="nav-link text-start w-100 bg-transparent border-0"
+              onClick={() => setShowAdmin(!showAdmin)}
+            >
+              &#9881; Administración
+            </button>
+            {showAdmin && (
+              <ul className="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                <li>
+                  <Link href="/users" className="nav-link link-dark ms-3">
+                    Gestionar Usuarios
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/passwords" className="nav-link link-dark ms-3">
+                    Gestionar Contraseñas
+                  </Link>
+                </li>
+              </ul>
+            )}
+          </li>
+        )}
+      </ul>
+      <hr />
+      <button className="btn btn-danger w-100 mt-auto" onClick={handleLogout}>
+        Logout
+      </button>
     </div>
   );
 }
