@@ -51,6 +51,11 @@ export default function Sidebar({ role }: SidebarProps) {
                   Backups
                 </Link>
               </li>
+              <li>
+                <Link href="/software" className="nav-link link-dark ms-3">
+                  Software de equipos
+                </Link>
+              </li>
             </ul>
           )}
         </li>
