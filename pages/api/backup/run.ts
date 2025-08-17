@@ -27,7 +27,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({
       backupId: backup.id,
       exportPath: backup.exportPath,
-      binaryPath: backup.binaryPath,
       diffPath: backup.diffPath,
     });
   } catch (e) {
