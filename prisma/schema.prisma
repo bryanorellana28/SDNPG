@@ -51,6 +51,7 @@ model Equipment {
   siteId       Int?
   credential   Credential? @relation(fields: [credentialId], references: [id])
   credentialId Int?
+  jobs         Job[]
 }
 
 model Backup {
@@ -69,6 +70,20 @@ model Job {
   deviceId  Int
   type      String
   status    String
+  scheduledAt DateTime?
+  goldenImageId Int?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  equipment   Equipment @relation(fields: [deviceId], references: [id])
+  goldenImage GoldenImage? @relation(fields: [goldenImageId], references: [id])
+}
+
+model GoldenImage {
+  id        Int      @id @default(autoincrement())
+  model     String   @unique
+  version   String
+  filename  String
+  sha256    String
+  uploadedAt DateTime @default(now())
+  jobs      Job[]
 }
