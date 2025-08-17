@@ -51,3 +51,23 @@ model Equipment {
   credential   Credential? @relation(fields: [credentialId], references: [id])
   credentialId Int?
 }
+
+model Backup {
+  id         Int      @id @default(autoincrement())
+  deviceId   Int
+  exportPath String
+  exportHash String
+  binaryPath String
+  binaryHash String
+  diffPath   String?
+  createdAt  DateTime @default(now())
+}
+
+model Job {
+  id        Int      @id @default(autoincrement())
+  deviceId  Int
+  type      String
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
