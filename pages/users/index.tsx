@@ -3,6 +3,7 @@ import { parse } from 'cookie';
 import jwt from 'jsonwebtoken';
 import { useEffect, useState } from 'react';
 import Sidebar from '../../components/Sidebar';
+import SearchBar from '../../components/SearchBar';
 
 interface User {
   id: number;
@@ -58,46 +59,12 @@ export default function Users({ role }: { role: string }) {
       <Sidebar role={role} />
       <div className="p-4 flex-grow-1">
         <h2>Usuarios</h2>
-        <input
-          className="form-control mb-3"
-          placeholder="Buscar"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
-        <form className="mb-3" onSubmit={handleAdd}>
-          <div className="mb-2">
-            <input
-              className="form-control"
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-              placeholder="Usuario"
-              required
-            />
-          </div>
-          <div className="mb-2">
-            <input
-              type="password"
-              className="form-control"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="Contraseña"
-              required
-            />
-          </div>
-          <div className="mb-2">
-            <select
-              className="form-select"
-              value={userRole}
-              onChange={e => setUserRole(e.target.value)}
-            >
-              <option value="ADMIN">ADMIN</option>
-              <option value="OPERATOR">OPERATOR</option>
-            </select>
-          </div>
-          <button className="btn btn-primary" type="submit">
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <SearchBar value={search} onChange={setSearch} />
+          <button className="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#addUser">
             Agregar
           </button>
-        </form>
+        </div>
         <table className="table">
           <thead>
             <tr>
@@ -129,6 +96,48 @@ export default function Users({ role }: { role: string }) {
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="offcanvas offcanvas-end" tabIndex={-1} id="addUser">
+        <div className="offcanvas-header">
+          <h5 className="offcanvas-title">Agregar Usuario</h5>
+          <button type="button" className="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div className="offcanvas-body">
+          <form onSubmit={handleAdd}>
+            <div className="mb-2">
+              <input
+                className="form-control"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                placeholder="Usuario"
+                required
+              />
+            </div>
+            <div className="mb-2">
+              <input
+                type="password"
+                className="form-control"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="Contraseña"
+                required
+              />
+            </div>
+            <div className="mb-2">
+              <select
+                className="form-select"
+                value={userRole}
+                onChange={e => setUserRole(e.target.value)}
+              >
+                <option value="ADMIN">ADMIN</option>
+                <option value="OPERATOR">OPERATOR</option>
+              </select>
+            </div>
+            <button className="btn btn-primary" type="submit">
+              Guardar
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
