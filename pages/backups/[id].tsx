@@ -8,7 +8,6 @@ import Sidebar from '../../components/Sidebar';
 interface Backup {
   id: number;
   exportPath: string;
-  binaryPath: string;
   diffPath?: string | null;
   createdAt: string;
 }
@@ -55,8 +54,7 @@ export default function DeviceBackups({ role }: { role: string }) {
           <thead>
             <tr>
               <th>ID</th>
-              <th>Export</th>
-              <th>Binary</th>
+              <th>Configuración</th>
               <th>Diff</th>
               <th>Fecha</th>
             </tr>
@@ -65,11 +63,22 @@ export default function DeviceBackups({ role }: { role: string }) {
             {backups.map(b => (
               <tr key={b.id}>
                 <td>{b.id}</td>
-                <td>{b.exportPath}</td>
-                <td>{b.binaryPath}</td>
+                <td>
+                  <a
+                    href={`/api/backup/config?path=${encodeURIComponent(b.exportPath)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Ver configuración
+                  </a>
+                </td>
                 <td>
                   {b.diffPath ? (
-                    <a href={`/api/backup/diff?path=${encodeURIComponent(b.diffPath)}`} target="_blank" rel="noopener noreferrer">
+                    <a
+                      href={`/api/backup/diff?path=${encodeURIComponent(b.diffPath)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       Ver diferencias
                     </a>
                   ) : (

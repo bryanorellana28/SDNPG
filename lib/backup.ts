@@ -23,36 +23,20 @@ export async function runBackup(deviceId: number) {
     });
 
     const timestamp = Date.now();
-    const exportName = `config-${timestamp}`;
-    const backupName = `backup-${timestamp}`;
+    const exportName = `config-${timestamp}.rsc`;
 
-    await ssh.execCommand(`/export file=${exportName}`);
-    await ssh.execCommand(`/system/backup/save name=${backupName}`);
+    const result = await ssh.execCommand('/export verbose');
 
     const baseDir = path.join(process.cwd(), 'var', 'data', 'backups', String(deviceId));
     const exportDir = path.join(baseDir, 'export');
-    const binaryDir = path.join(baseDir, 'binary');
     const diffDir = path.join(baseDir, 'diff');
     fs.mkdirSync(exportDir, { recursive: true });
-    fs.mkdirSync(binaryDir, { recursive: true });
     fs.mkdirSync(diffDir, { recursive: true });
 
-    const exportFile = `${exportName}.rsc`;
-    const backupFile = `${backupName}.backup`;
+    const localExport = path.join(exportDir, exportName);
+    fs.writeFileSync(localExport, result.stdout);
 
-    const localExport = path.join(exportDir, exportFile);
-    const localBinary = path.join(binaryDir, backupFile);
-
-    await ssh.getFile(localExport, exportFile);
-    await ssh.getFile(localBinary, backupFile);
-
-    await ssh.execCommand(`/file/remove ${exportFile}`);
-    await ssh.execCommand(`/file/remove ${backupFile}`);
-
-    const exportData = fs.readFileSync(localExport);
-    const binaryData = fs.readFileSync(localBinary);
-    const exportHash = crypto.createHash('sha256').update(exportData).digest('hex');
-    const binaryHash = crypto.createHash('sha256').update(binaryData).digest('hex');
+    const exportHash = crypto.createHash('sha256').update(result.stdout).digest('hex');
 
     let diffPath: string | null = null;
     const rscFiles = fs.readdirSync(exportDir).filter(f => f.endsWith('.rsc')).sort();
@@ -69,8 +53,6 @@ export async function runBackup(deviceId: number) {
         deviceId: Number(deviceId),
         exportPath: localExport,
         exportHash,
-        binaryPath: localBinary,
-        binaryHash,
         diffPath,
       },
     });

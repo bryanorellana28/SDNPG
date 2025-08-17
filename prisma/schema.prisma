@@ -58,8 +58,8 @@ model Backup {
   deviceId   Int
   exportPath String
   exportHash String
-  binaryPath String
-  binaryHash String
+  binaryPath String?
+  binaryHash String?
   diffPath   String?
   createdAt  DateTime @default(now())
 }
