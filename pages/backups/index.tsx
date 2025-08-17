@@ -3,21 +3,19 @@ import { parse } from 'cookie';
 import jwt from 'jsonwebtoken';
 import { useEffect, useState } from 'react';
 import Sidebar from '../../components/Sidebar';
+import Link from 'next/link';
 
-interface Backup {
+interface Equipment {
   id: number;
-  deviceId: number;
-  exportPath: string;
-  binaryPath: string;
-  diffPath?: string | null;
-  createdAt: string;
+  hostname: string;
+  ip: string;
 }
 
 export default function Backups({ role }: { role: string }) {
-  const [backups, setBackups] = useState<Backup[]>([]);
+  const [equipos, setEquipos] = useState<Equipment[]>([]);
 
   useEffect(() => {
-    fetch('/api/backup').then(res => res.json()).then(setBackups);
+    fetch('/api/equipos').then(res => res.json()).then(setEquipos);
   }, []);
 
   return (
@@ -28,23 +26,21 @@ export default function Backups({ role }: { role: string }) {
         <table className="table">
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Device</th>
-              <th>Export</th>
-              <th>Binary</th>
-              <th>Diff</th>
-              <th>Fecha</th>
+              <th>Hostname</th>
+              <th>IP</th>
+              <th>Acción</th>
             </tr>
           </thead>
           <tbody>
-            {backups.map(b => (
-              <tr key={b.id}>
-                <td>{b.id}</td>
-                <td>{b.deviceId}</td>
-                <td>{b.exportPath}</td>
-                <td>{b.binaryPath}</td>
-                <td>{b.diffPath || ''}</td>
-                <td>{new Date(b.createdAt).toLocaleString()}</td>
+            {equipos.map(e => (
+              <tr key={e.id}>
+                <td>{e.hostname}</td>
+                <td>{e.ip}</td>
+                <td>
+                  <Link className="btn btn-sm btn-primary" href={`/backups/${e.id}`}>
+                    Backup
+                  </Link>
+                </td>
               </tr>
             ))}
           </tbody>

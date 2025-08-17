@@ -25,10 +25,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (method === 'PUT') {
-    const { ip, credentialId, siteId, type } = req.body;
+    const { ip, credentialId, siteId, type, hostname } = req.body;
     const eq = await prisma.equipment.update({
       where: { id: eqId },
-      data: { ip, credentialId, siteId, type },
+      data: { ip, credentialId, siteId, type, hostname },
     });
     return res.status(200).json(eq);
   }

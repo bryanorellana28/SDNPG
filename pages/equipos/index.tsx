@@ -7,6 +7,7 @@ import SearchBar from '../../components/SearchBar';
 
 interface Equipment {
   id: number;
+  hostname: string;
   ip: string;
   chassis: string;
   serial: string;
@@ -84,6 +85,7 @@ export default function Equipos({ role }: { role: string }) {
         <table className="table">
           <thead>
             <tr>
+              <th>Hostname</th>
               <th>IP</th>
               <th>Chassis</th>
               <th>Serial</th>
@@ -96,6 +98,7 @@ export default function Equipos({ role }: { role: string }) {
           <tbody>
             {filtered.map(e => (
               <tr key={e.id}>
+                <td>{e.hostname}</td>
                 <td>{e.ip}</td>
                 <td>{e.chassis}</td>
                 <td>{e.serial}</td>
