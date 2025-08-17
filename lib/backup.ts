@@ -23,11 +23,11 @@ export async function runBackup(deviceId: number) {
     });
 
     const timestamp = Date.now();
-    const remoteExport = `config-${timestamp}.rsc`;
-    const remoteBackup = `backup-${timestamp}.backup`;
+    const exportName = `config-${timestamp}`;
+    const backupName = `backup-${timestamp}`;
 
-    await ssh.execCommand(`/export file=${remoteExport}`);
-    await ssh.execCommand(`/system/backup/save name=${remoteBackup}`);
+    await ssh.execCommand(`/export file=${exportName}`);
+    await ssh.execCommand(`/system/backup/save name=${backupName}`);
 
     const baseDir = path.join(process.cwd(), 'var', 'data', 'backups', String(deviceId));
     const exportDir = path.join(baseDir, 'export');
@@ -37,14 +37,17 @@ export async function runBackup(deviceId: number) {
     fs.mkdirSync(binaryDir, { recursive: true });
     fs.mkdirSync(diffDir, { recursive: true });
 
-    const localExport = path.join(exportDir, remoteExport);
-    const localBinary = path.join(binaryDir, remoteBackup);
+    const exportFile = `${exportName}.rsc`;
+    const backupFile = `${backupName}.backup`;
 
-    await ssh.getFile(localExport, remoteExport);
-    await ssh.getFile(localBinary, remoteBackup);
+    const localExport = path.join(exportDir, exportFile);
+    const localBinary = path.join(binaryDir, backupFile);
 
-    await ssh.execCommand(`/file/remove ${remoteExport}`);
-    await ssh.execCommand(`/file/remove ${remoteBackup}`);
+    await ssh.getFile(localExport, exportFile);
+    await ssh.getFile(localBinary, backupFile);
+
+    await ssh.execCommand(`/file/remove ${exportFile}`);
+    await ssh.execCommand(`/file/remove ${backupFile}`);
 
     const exportData = fs.readFileSync(localExport);
     const binaryData = fs.readFileSync(localBinary);
