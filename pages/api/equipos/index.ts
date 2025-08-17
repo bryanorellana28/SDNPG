@@ -3,6 +3,8 @@ import prisma from '../../../lib/prisma';
 import { parse } from 'cookie';
 import jwt from 'jsonwebtoken';
 import { NodeSSH } from 'node-ssh';
+import { runBackup } from '../../../lib/backup';
+import '../../../lib/scheduler';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const cookies = parse(req.headers.cookie || '');
@@ -38,9 +40,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         type === 'Mikrotik'
           ? parseLine(stdout, 'upgrade-firmware:')
           : parseCiscoVersion(stdout);
+      let hostname = '';
+      if (type === 'Mikrotik') {
+        const ident = (await ssh.execCommand('/system identity print')).stdout;
+        hostname = parseLine(ident, 'name:');
+      } else {
+        const ident = (await ssh.execCommand('show running-config | include hostname')).stdout;
+        hostname = ident.split('hostname').pop()?.trim() || '';
+      }
       const eq = await prisma.equipment.create({
         data: {
           ip,
+          hostname,
           chassis,
           serial,
           version,
@@ -49,6 +60,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           credentialId,
         },
       });
+      try {
+        await runBackup(eq.id);
+      } catch (e) {
+        console.error(e);
+      }
       return res.status(201).json(eq);
     } catch (e) {
       return res.status(500).json({ message: 'SSH connection failed' });
