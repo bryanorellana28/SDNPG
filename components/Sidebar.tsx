@@ -16,20 +16,20 @@ export default function Sidebar({ role }: SidebarProps) {
 
   return (
     <div
-      className="d-flex flex-column flex-shrink-0 p-3 bg-light"
+      className="d-flex flex-column flex-shrink-0 p-3 bg-dark text-white"
       style={{ width: '280px', minHeight: '100vh' }}
     >
       <Link
         href="/dashboard"
-        className="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-dark text-decoration-none"
+        className="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none"
       >
         <span className="fs-4">SDNPG</span>
       </Link>
-      <hr />
+      <hr className="border-secondary" />
       <ul className="nav nav-pills flex-column mb-auto">
         <li className="nav-item">
           <button
-            className="nav-link text-start w-100 bg-transparent border-0"
+            className="nav-link text-start w-100 bg-transparent border-0 text-white"
             onClick={() => setShowInventory(!showInventory)}
           >
             Inventario
@@ -37,18 +37,23 @@ export default function Sidebar({ role }: SidebarProps) {
           {showInventory && (
             <ul className="btn-toggle-nav list-unstyled fw-normal pb-1 small">
               <li>
-                <Link href="/equipos" className="nav-link link-dark ms-3">
+                <Link href="/equipos" className="nav-link link-light ms-3">
                   Equipos
                 </Link>
               </li>
               <li>
-                <Link href="/sites" className="nav-link link-dark ms-3">
+                <Link href="/sites" className="nav-link link-light ms-3">
                   Sitios
                 </Link>
               </li>
               <li>
-                <Link href="/backups" className="nav-link link-dark ms-3">
+                <Link href="/backups" className="nav-link link-light ms-3">
                   Backups
+                </Link>
+              </li>
+              <li>
+                <Link href="/software" className="nav-link link-light ms-3">
+                  Actualizaciones
                 </Link>
               </li>
             </ul>
@@ -58,7 +63,7 @@ export default function Sidebar({ role }: SidebarProps) {
         {role === 'ADMIN' && (
           <li className="nav-item mt-3">
             <button
-              className="nav-link text-start w-100 bg-transparent border-0"
+              className="nav-link text-start w-100 bg-transparent border-0 text-white"
               onClick={() => setShowAdmin(!showAdmin)}
             >
               &#9881; Administración
@@ -66,12 +71,12 @@ export default function Sidebar({ role }: SidebarProps) {
             {showAdmin && (
               <ul className="btn-toggle-nav list-unstyled fw-normal pb-1 small">
                 <li>
-                  <Link href="/users" className="nav-link link-dark ms-3">
+                  <Link href="/users" className="nav-link link-light ms-3">
                     Gestionar Usuarios
                   </Link>
                 </li>
                 <li>
-                  <Link href="/passwords" className="nav-link link-dark ms-3">
+                  <Link href="/passwords" className="nav-link link-light ms-3">
                     Gestionar Contraseñas
                   </Link>
                 </li>
@@ -80,7 +85,7 @@ export default function Sidebar({ role }: SidebarProps) {
           </li>
         )}
       </ul>
-      <hr />
+      <hr className="border-secondary" />
       <button className="btn btn-danger w-100 mt-auto" onClick={handleLogout}>
         Logout
       </button>
