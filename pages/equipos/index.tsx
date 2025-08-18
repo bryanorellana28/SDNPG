@@ -1,8 +1,7 @@
 import { GetServerSideProps } from 'next';
 import { parse } from 'cookie';
 import jwt from 'jsonwebtoken';
-import { useEffect, useState, useRef } from 'react';
-import { Modal } from 'bootstrap';
+import { useEffect, useState } from 'react';
 import Sidebar from '../../components/Sidebar';
 import SearchBar from '../../components/SearchBar';
 
@@ -36,8 +35,6 @@ export default function Equipos({ role }: { role: string }) {
   const [search, setSearch] = useState('');
   const [credentials, setCredentials] = useState<Credential[]>([]);
   const [sites, setSites] = useState<SiteOption[]>([]);
-  const [message, setMessage] = useState('');
-  const modalRef = useRef<Modal | null>(null);
 
   const fetchEquipos = async () => {
     const res = await fetch('/api/equipos');
@@ -49,7 +46,6 @@ export default function Equipos({ role }: { role: string }) {
     fetchEquipos();
     fetch('/api/passwords').then(r => r.json()).then(setCredentials);
     fetch('/api/sites').then(r => r.json()).then(setSites);
-    modalRef.current = new Modal(document.getElementById('messageModal')!);
   }, []);
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -60,18 +56,17 @@ export default function Equipos({ role }: { role: string }) {
       body: JSON.stringify({ ip, credentialId: Number(credentialId), siteId: siteId ? Number(siteId) : null, type }),
     });
     if (res.status === 201) {
-      setMessage('Agregado con éxito');
+      alert('Agregado con éxito');
       setIp('');
       setCredentialId('');
       setSiteId('');
       setType('Mikrotik');
       fetchEquipos();
     } else if (res.status === 409) {
-      setMessage('El equipo ya se encuentra en la base de datos');
+      alert('El equipo ya se encuentra en la base de datos');
     } else {
-      setMessage('Error al agregar');
+      alert('Error al agregar');
     }
-    modalRef.current?.show();
   };
 
   const handleDelete = async (id: number) => {
@@ -161,18 +156,6 @@ export default function Equipos({ role }: { role: string }) {
             </div>
             <button className="btn btn-primary" type="submit">Guardar</button>
           </form>
-        </div>
-      </div>
-      <div className="modal fade" id="messageModal" tabIndex={-1}>
-        <div className="modal-dialog">
-          <div className="modal-content">
-            <div className="modal-body">{message}</div>
-            <div className="modal-footer">
-              <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">
-                Cerrar
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>

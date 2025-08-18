@@ -2,8 +2,7 @@ import { GetServerSideProps } from 'next';
 import { parse } from 'cookie';
 import jwt from 'jsonwebtoken';
 import { useRouter } from 'next/router';
-import { useEffect, useState, useRef } from 'react';
-import { Modal } from 'bootstrap';
+import { useEffect, useState } from 'react';
 import Sidebar from '../../components/Sidebar';
 
 interface Backup {
@@ -22,9 +21,6 @@ export default function DeviceBackups({ role }: { role: string }) {
   const { id } = router.query;
   const [backups, setBackups] = useState<Backup[]>([]);
   const [equip, setEquip] = useState<Equipment | null>(null);
-  const [config1, setConfig1] = useState('');
-  const [config2, setConfig2] = useState('');
-  const modalRef = useRef<Modal | null>(null);
 
   const fetchBackups = () => {
     if (!id) return;
@@ -37,10 +33,6 @@ export default function DeviceBackups({ role }: { role: string }) {
     fetch(`/api/equipos/${id}`).then(res => res.json()).then(setEquip);
   }, [id]);
 
-  useEffect(() => {
-    modalRef.current = new Modal(document.getElementById('compareModal')!);
-  }, []);
-
   const handleRun = async () => {
     await fetch('/api/backup/run', {
       method: 'POST',
@@ -48,12 +40,14 @@ export default function DeviceBackups({ role }: { role: string }) {
       body: JSON.stringify({ deviceId: Number(id) }),
     });
     fetchBackups();
+    alert('Backup ejecutado');
   };
-
   const handleCompare = () => {
-    if (!config1 || !config2) return;
-    modalRef.current?.hide();
-    window.open(`/api/backup/diff?id1=${config1}&id2=${config2}`, '_blank');
+    const id1 = prompt('ID de la configuración 1');
+    const id2 = prompt('ID de la configuración 2');
+    if (id1 && id2) {
+      window.open(`/api/backup/diff?id1=${id1}&id2=${id2}`, '_blank');
+    }
   };
 
   return (
@@ -63,11 +57,7 @@ export default function DeviceBackups({ role }: { role: string }) {
         <button className="btn btn-secondary mb-3" onClick={() => router.back()}>Regresar</button>
         <h3>Backups del equipo {equip ? `${equip.hostname} (${equip.ip})` : id}</h3>
         <button className="btn btn-primary mb-3" onClick={handleRun}>Ejecutar Backup</button>
-        <button
-          className="btn btn-secondary mb-3 ms-2"
-          data-bs-toggle="modal"
-          data-bs-target="#compareModal"
-        >
+        <button className="btn btn-secondary mb-3 ms-2" onClick={handleCompare}>
           Ver diferencias
         </button>
         <table className="table">
@@ -96,42 +86,6 @@ export default function DeviceBackups({ role }: { role: string }) {
             ))}
           </tbody>
         </table>
-        <div className="modal fade" id="compareModal" tabIndex={-1}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Comparar configuraciones</h5>
-                <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-              <div className="modal-body">
-                <div className="mb-2">
-                  <select className="form-select" value={config1} onChange={e => setConfig1(e.target.value)}>
-                    <option value="">Configuración 1</option>
-                    {backups.map(b => (
-                      <option key={b.id} value={b.id}>{b.id}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="mb-2">
-                  <select className="form-select" value={config2} onChange={e => setConfig2(e.target.value)}>
-                    <option value="">Configuración 2</option>
-                    {backups.map(b => (
-                      <option key={b.id} value={b.id}>{b.id}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">
-                  Cerrar
-                </button>
-                <button type="button" className="btn btn-primary" onClick={handleCompare}>
-                  Comparar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
