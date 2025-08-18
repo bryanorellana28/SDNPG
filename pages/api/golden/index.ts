@@ -30,14 +30,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const sha256 = crypto.createHash('sha256').update(buffer).digest('hex');
 
     const dir = path.join(process.cwd(), 'var', 'data', 'golden', model);
+    fs.rmSync(dir, { recursive: true, force: true });
     fs.mkdirSync(dir, { recursive: true });
 
     const existing = await prisma.goldenImage.findUnique({ where: { model } });
     if (existing) {
-      try {
-        fs.unlinkSync(path.join(dir, existing.filename));
-        fs.unlinkSync(path.join(dir, 'metadata.json'));
-      } catch {}
       await prisma.goldenImage.delete({ where: { id: existing.id } });
     }
 
