@@ -53,7 +53,7 @@ export default function Sidebar({ role }: SidebarProps) {
               </li>
               <li>
                 <Link href="/software" className="nav-link link-light ms-3">
-                  Actualizaciones
+                  Golden Images y Actualizaciones
                 </Link>
               </li>
             </ul>
