@@ -8,6 +8,7 @@ interface SidebarProps {
 export default function Sidebar({ role }: SidebarProps) {
   const [showAdmin, setShowAdmin] = useState(false);
   const [showInventory, setShowInventory] = useState(false);
+  const [showSoftware, setShowSoftware] = useState(false);
 
   const handleLogout = async () => {
     await fetch('/api/logout');
@@ -51,9 +52,27 @@ export default function Sidebar({ role }: SidebarProps) {
                   Backups
                 </Link>
               </li>
+            </ul>
+          )}
+        </li>
+
+        <li className="nav-item mt-3">
+          <button
+            className="nav-link text-start w-100 bg-transparent border-0 text-white"
+            onClick={() => setShowSoftware(!showSoftware)}
+          >
+            Gestión de software
+          </button>
+          {showSoftware && (
+            <ul className="btn-toggle-nav list-unstyled fw-normal pb-1 small">
               <li>
-                <Link href="/software" className="nav-link link-light ms-3">
-                  Golden Images y Actualizaciones
+                <Link href="/software/golden" className="nav-link link-light ms-3">
+                  Golden Image
+                </Link>
+              </li>
+              <li>
+                <Link href="/software/actualizaciones" className="nav-link link-light ms-3">
+                  Actualizaciones
                 </Link>
               </li>
             </ul>
