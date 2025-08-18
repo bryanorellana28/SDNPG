@@ -14,6 +14,7 @@ interface GoldenImage {
   model: string;
   version: string;
   filename: string;
+  count: number;
 }
 
 export default function Golden({ role }: { role: string }) {
@@ -51,7 +52,14 @@ export default function Golden({ role }: { role: string }) {
     fetchData();
   };
 
-  const countByModel = (model: string) => equipos.filter(e => e.chassis === model).length;
+  const handleDelete = async (id: number) => {
+    await fetch('/api/golden', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    fetchData();
+  };
 
   return (
     <div className="d-flex">
@@ -59,19 +67,44 @@ export default function Golden({ role }: { role: string }) {
       <div className="p-4 flex-grow-1">
         <h2>Golden Images</h2>
         <div className="d-flex flex-wrap gap-2 mb-3">
-          {models.map(m => (
-            <div key={m}>
-              <span className="me-2">{m}</span>
-              <button
-                className="btn btn-sm btn-secondary"
-                data-bs-toggle="offcanvas"
-                data-bs-target="#uploadGolden"
-                onClick={() => setCurrentModel(m)}
-              >
-                Subir golden image
-              </button>
-            </div>
-          ))}
+          {models.map(m => {
+            const existing = golden.find(g => g.model === m);
+            return (
+              <div key={m}>
+                <span className="me-2">{m}</span>
+                {!existing ? (
+                  <button
+                    className="btn btn-sm btn-secondary"
+                    data-bs-toggle="offcanvas"
+                    data-bs-target="#uploadGolden"
+                    onClick={() => {
+                      setCurrentModel(m);
+                      setVersion('');
+                    }}
+                  >
+                    Agregar golden image
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      className="btn btn-sm btn-secondary me-2"
+                      data-bs-toggle="offcanvas"
+                      data-bs-target="#uploadGolden"
+                      onClick={() => {
+                        setCurrentModel(m);
+                        setVersion(existing.version || '');
+                      }}
+                    >
+                      Actualizar golden image
+                    </button>
+                    <button className="btn btn-sm btn-danger" onClick={() => handleDelete(existing.id)}>
+                      Eliminar
+                    </button>
+                  </>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         <div className="card">
@@ -80,18 +113,18 @@ export default function Golden({ role }: { role: string }) {
               <thead>
                 <tr>
                   <th>Modelo</th>
+                  <th>Equipos</th>
                   <th>Versión</th>
                   <th>Archivo</th>
-                  <th>Equipos</th>
                 </tr>
               </thead>
               <tbody>
                 {golden.map(g => (
                   <tr key={g.id}>
                     <td>{g.model}</td>
+                    <td>{g.count}</td>
                     <td>{g.version}</td>
                     <td>{g.filename}</td>
-                    <td>{countByModel(g.model)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -113,7 +146,6 @@ export default function Golden({ role }: { role: string }) {
                 value={version}
                 onChange={e => setVersion(e.target.value)}
                 placeholder="Versión"
-                required
               />
             </div>
             <div className="mb-2">

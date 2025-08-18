@@ -25,6 +25,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const cred = await prisma.credential.findUnique({ where: { id: credentialId } });
     if (!cred) return res.status(400).json({ message: 'Credential not found' });
 
+    const existing = await prisma.equipment.findFirst({ where: { ip } });
+    if (existing) return res.status(409).json({ message: 'Equipment already exists' });
+
     const ssh = new NodeSSH();
     try {
       await ssh.connect({ host: ip, username: cred.username, password: cred.password });
