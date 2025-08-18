@@ -1,7 +1,8 @@
 import { GetServerSideProps } from 'next';
 import { parse } from 'cookie';
 import jwt from 'jsonwebtoken';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { Modal } from 'bootstrap';
 import Sidebar from '../../components/Sidebar';
 import SearchBar from '../../components/SearchBar';
 
@@ -18,6 +19,8 @@ export default function Sites({ role }: { role: string }) {
   const [sites, setSites] = useState<Site[]>([]);
   const [form, setForm] = useState({ nombre: '', clave: '', ubicacion: '', zona: '', direccion: '' });
   const [search, setSearch] = useState('');
+  const [message, setMessage] = useState('');
+  const modalRef = useRef<Modal | null>(null);
 
   const fetchSites = async () => {
     const res = await fetch('/api/sites');
@@ -27,6 +30,7 @@ export default function Sites({ role }: { role: string }) {
 
   useEffect(() => {
     fetchSites();
+    modalRef.current = new Modal(document.getElementById('messageModal')!);
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,13 +39,21 @@ export default function Sites({ role }: { role: string }) {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    await fetch('/api/sites', {
+    const res = await fetch('/api/sites', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
     });
-    setForm({ nombre: '', clave: '', ubicacion: '', zona: '', direccion: '' });
-    fetchSites();
+    if (res.status === 201) {
+      setMessage('Agregada con éxito');
+      setForm({ nombre: '', clave: '', ubicacion: '', zona: '', direccion: '' });
+      fetchSites();
+    } else if (res.status === 409) {
+      setMessage('La dirección ya se encuentra en la base de datos');
+    } else {
+      setMessage('Error al agregar');
+    }
+    modalRef.current?.show();
   };
 
   const handleDelete = async (id: number) => {
@@ -128,6 +140,18 @@ export default function Sites({ role }: { role: string }) {
             </div>
             <button className="btn btn-primary mt-2" type="submit">Agregar</button>
           </form>
+        </div>
+      </div>
+      <div className="modal fade" id="messageModal" tabIndex={-1}>
+        <div className="modal-dialog">
+          <div className="modal-content">
+            <div className="modal-body">{message}</div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">
+                Cerrar
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

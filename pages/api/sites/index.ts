@@ -18,6 +18,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
   if (req.method === 'POST') {
     const { nombre, clave, ubicacion, zona, direccion } = req.body;
+    const existing = await prisma.site.findFirst({ where: { nombre, clave, ubicacion, zona, direccion } });
+    if (existing) return res.status(409).json({ message: 'Site already exists' });
     const site = await prisma.site.create({
       data: { nombre, clave, ubicacion, zona, direccion },
     });

@@ -17,12 +17,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === 'GET') {
     const images = await prisma.goldenImage.findMany();
-    return res.status(200).json(images);
+    const data = await Promise.all(
+      images.map(async img => {
+        const count = await prisma.equipment.count({ where: { chassis: img.model } });
+        return { ...img, count };
+      })
+    );
+    return res.status(200).json(data);
   }
 
   if (req.method === 'POST') {
-    const { model, version, file, filename } = req.body;
-    if (!model || !version || !file || !filename) {
+    const { model, version = '', file, filename } = req.body;
+    if (!model || !file || !filename) {
       return res.status(400).json({ message: 'Missing fields' });
     }
 
@@ -60,6 +66,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(201).json(image);
   }
 
-  res.setHeader('Allow', 'GET,POST');
+  if (req.method === 'DELETE') {
+    const { id, model } = req.body;
+    const img = model
+      ? await prisma.goldenImage.findUnique({ where: { model } })
+      : await prisma.goldenImage.findUnique({ where: { id: Number(id) } });
+    if (!img) return res.status(404).json({ message: 'Not found' });
+    const dir = path.join(process.cwd(), 'var', 'data', 'golden', img.model);
+    try {
+      fs.unlinkSync(path.join(dir, img.filename));
+      fs.unlinkSync(path.join(dir, 'metadata.json'));
+    } catch {}
+    await prisma.goldenImage.delete({ where: { id: img.id } });
+    return res.status(200).json({ message: 'Deleted' });
+  }
+
+  res.setHeader('Allow', 'GET,POST,DELETE');
   return res.status(405).end('Method Not Allowed');
 }
