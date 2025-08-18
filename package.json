@@ -9,7 +9,7 @@
     "seed": "ts-node --compiler-options '{\"module\":\"commonjs\"}' prisma/seed.ts"
   },
   "dependencies": {
-    "next": "14.2.3",
+    "next": "14.2.4",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "bootstrap": "^5.3.3",
@@ -24,6 +24,6 @@
     "ts-node": "^10.9.2",
     "prisma": "^5.15.0",
     "eslint": "8.55.0",
-    "eslint-config-next": "14.2.3"
+    "eslint-config-next": "14.2.4"
   }
 }
