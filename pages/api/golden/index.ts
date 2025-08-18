@@ -5,7 +5,6 @@ import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import '../../../lib/goldenScheduler';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const cookies = parse(req.headers.cookie || '');

@@ -76,6 +76,7 @@ export default function Software({ role }: { role: string }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ deviceId: scheduleId, goldenImageId: g.id, date: scheduleDate }),
     });
+    fetchData();
     setScheduleId(null);
     setScheduleDate('');
   };
@@ -175,7 +176,7 @@ export default function Software({ role }: { role: string }) {
           <form onSubmit={handleSchedule}>
             <div className="mb-2">
               <input
-                type="datetime-local"
+                type="date"
                 className="form-control"
                 value={scheduleDate}
                 onChange={e => setScheduleDate(e.target.value)}
