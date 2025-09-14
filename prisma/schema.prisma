@@ -51,18 +51,21 @@ model Equipment {
   siteId       Int?
   credential   Credential? @relation(fields: [credentialId], references: [id])
   credentialId Int?
+  model        Model?      @relation(fields: [modelId], references: [id])
+  modelId      Int?
   jobs         Job[]
 }
 
 model Backup {
-  id         Int      @id @default(autoincrement())
+  id         Int        @id @default(autoincrement())
   deviceId   Int
+  equipment  Equipment  @relation(fields: [deviceId], references: [id])
   exportPath String
   exportHash String
   binaryPath String?
   binaryHash String?
   diffPath   String?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime   @default(now())
 }
 
 model Job {
@@ -79,11 +82,44 @@ model Job {
 }
 
 model GoldenImage {
-  id        Int      @id @default(autoincrement())
-  model     String   @unique
-  version   String
-  filename  String
-  sha256    String
-  uploadedAt DateTime @default(now())
-  jobs      Job[]
+  id         Int       @id @default(autoincrement())
+  model      String    @unique
+  version    String
+  filename   String
+  sha256     String
+  uploadedAt DateTime  @default(now())
+  jobs       Job[]
+  models     Model[]
+}
+
+model Model {
+  id            Int          @id @default(autoincrement())
+  name          String       @unique
+  goldenImage   GoldenImage? @relation(fields: [goldenImageId], references: [id])
+  goldenImageId Int?
+  equipments    Equipment[]
+}
+
+enum ServiceType {
+  CAPA2
+  GESTIONADO
+}
+
+model Client {
+  id       Int       @id @default(autoincrement())
+  name     String
+  contact  String?
+  services Service[]
+}
+
+model Service {
+  id          Int         @id @default(autoincrement())
+  type        ServiceType
+  client      Client      @relation(fields: [clientId], references: [id])
+  clientId    Int
+  equipment   Equipment?  @relation(fields: [equipmentId], references: [id])
+  equipmentId Int?
+  port        String?
+  deviceModel String?
+  config      String?
 }

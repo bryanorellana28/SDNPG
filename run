@@ -1,0 +1,23 @@
+# Pasos para ejecutar la aplicación
+
+1. Instalar dependencias:
+
+```bash
+npm install
+```
+
+2. Ejecutar las migraciones y generar el cliente de Prisma:
+
+```bash
+npx prisma generate
+npx prisma migrate deploy
+```
+
+3. Iniciar el entorno de desarrollo:
+
+```bash
+npm run dev
+```
+
+La aplicación estará disponible en http://localhost:3000
+

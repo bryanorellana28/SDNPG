@@ -43,6 +43,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         type === 'Mikrotik'
           ? parseLine(stdout, 'upgrade-firmware:')
           : parseCiscoVersion(stdout);
+      const model = await prisma.model.upsert({
+        where: { name: chassis },
+        update: {},
+        create: { name: chassis },
+      });
       let hostname = '';
       if (type === 'Mikrotik') {
         const ident = (await ssh.execCommand('/system identity print')).stdout;
@@ -61,6 +66,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           type,
           siteId,
           credentialId,
+          modelId: model.id,
         },
       });
       try {
