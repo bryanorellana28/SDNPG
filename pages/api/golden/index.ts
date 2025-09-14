@@ -16,10 +16,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'GET') {
-    const images = await prisma.goldenImage.findMany();
+    const images = await prisma.goldenImage.findMany({ include: { models: true } });
     const data = await Promise.all(
       images.map(async img => {
-        const count = await prisma.equipment.count({ where: { chassis: img.model } });
+        const count = await prisma.equipment.count({ where: { model: { goldenImageId: img.id } } });
         return { ...img, count };
       })
     );
@@ -63,6 +63,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const image = await prisma.goldenImage.create({
       data: { model, version, filename: destName, sha256 },
     });
+
+    await prisma.model.upsert({
+      where: { name: model },
+      update: { goldenImageId: image.id },
+      create: { name: model, goldenImageId: image.id },
+    });
+
     return res.status(201).json(image);
   }
 
@@ -78,6 +85,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       fs.unlinkSync(path.join(dir, 'metadata.json'));
     } catch {}
     await prisma.goldenImage.delete({ where: { id: img.id } });
+    await prisma.model.updateMany({ where: { goldenImageId: img.id }, data: { goldenImageId: null } });
     return res.status(200).json({ message: 'Deleted' });
   }
 
