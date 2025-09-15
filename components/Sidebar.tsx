@@ -10,6 +10,7 @@ export default function Sidebar({ role }: SidebarProps) {
   const [showInventory, setShowInventory] = useState(false);
   const [showSoftware, setShowSoftware] = useState(false);
   const [showClients, setShowClients] = useState(false);
+  const [showOperation, setShowOperation] = useState(false);
 
   const handleLogout = async () => {
     await fetch('/api/logout');
@@ -134,9 +135,26 @@ export default function Sidebar({ role }: SidebarProps) {
         </li>
 
         <li className="nav-item mt-3">
-          <Link href="/diagnostico" className="nav-link link-light">
-            Diagnóstico
-          </Link>
+          <button
+            className="nav-link text-start w-100 bg-transparent border-0 text-white"
+            onClick={() => setShowOperation(!showOperation)}
+          >
+            Operación
+          </button>
+          {showOperation && (
+            <ul className="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+              <li>
+                <Link href="/diagnostico" className="nav-link link-light ms-3">
+                  Diagnóstico
+                </Link>
+              </li>
+              <li>
+                <Link href="/operacion/rastreo-clientes" className="nav-link link-light ms-3">
+                  Rastreo de clientes
+                </Link>
+              </li>
+            </ul>
+          )}
         </li>
       </ul>
       <hr className="border-secondary" />

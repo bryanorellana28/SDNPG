@@ -25,10 +25,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (method === 'PUT') {
-    const { ip, credentialId, siteId, type, hostname } = req.body;
+    const { ip, credentialId, siteId, type, hostname, networkRole } = req.body;
     const eq = await prisma.equipment.update({
       where: { id: eqId },
-      data: { ip, credentialId, siteId, type, hostname },
+      data: {
+        ip,
+        credentialId,
+        siteId,
+        type,
+        hostname,
+        networkRole: networkRole === 'Cliente' ? 'Cliente' : 'Nodo',
+      },
     });
     return res.status(200).json(eq);
   }

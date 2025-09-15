@@ -47,6 +47,7 @@ model Equipment {
   serial       String
   version      String
   type         String
+  networkRole  String      @default("Nodo")
   site         Site?       @relation(fields: [siteId], references: [id])
   siteId       Int?
   credential   Credential? @relation(fields: [credentialId], references: [id])
