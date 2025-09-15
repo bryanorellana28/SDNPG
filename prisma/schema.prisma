@@ -22,7 +22,7 @@ model User {
 }
 
 model Credential {
-  id          Int    @id @default(autoincrement())
+  id          Int         @id @default(autoincrement())
   username    String
   password    String
   description String
@@ -30,12 +30,12 @@ model Credential {
 }
 
 model Site {
-  id        Int    @id @default(autoincrement())
-  nombre    String
-  clave     String
-  ubicacion String
-  zona      String
-  direccion String
+  id         Int         @id @default(autoincrement())
+  nombre     String
+  clave      String
+  ubicacion  String
+  zona       String
+  direccion  String
   equipments Equipment[]
 }
 
@@ -54,40 +54,42 @@ model Equipment {
   model        Model?      @relation(fields: [modelId], references: [id])
   modelId      Int?
   jobs         Job[]
+  backups      Backup[]
+  services     Service[]
 }
 
 model Backup {
-  id         Int        @id @default(autoincrement())
+  id         Int       @id @default(autoincrement())
   deviceId   Int
-  equipment  Equipment  @relation(fields: [deviceId], references: [id])
+  equipment  Equipment @relation(fields: [deviceId], references: [id])
   exportPath String
   exportHash String
   binaryPath String?
   binaryHash String?
   diffPath   String?
-  createdAt  DateTime   @default(now())
+  createdAt  DateTime  @default(now())
 }
 
 model Job {
-  id        Int      @id @default(autoincrement())
-  deviceId  Int
-  type      String
-  status    String
-  scheduledAt DateTime?
+  id            Int          @id @default(autoincrement())
+  deviceId      Int
+  type          String
+  status        String
+  scheduledAt   DateTime?
   goldenImageId Int?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  equipment   Equipment @relation(fields: [deviceId], references: [id])
-  goldenImage GoldenImage? @relation(fields: [goldenImageId], references: [id])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  equipment     Equipment    @relation(fields: [deviceId], references: [id])
+  goldenImage   GoldenImage? @relation(fields: [goldenImageId], references: [id])
 }
 
 model GoldenImage {
-  id         Int       @id @default(autoincrement())
-  model      String    @unique
+  id         Int      @id @default(autoincrement())
+  model      String   @unique
   version    String
   filename   String
   sha256     String
-  uploadedAt DateTime  @default(now())
+  uploadedAt DateTime @default(now())
   jobs       Job[]
   models     Model[]
 }

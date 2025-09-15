@@ -35,6 +35,7 @@ export default function Equipos({ role }: { role: string }) {
   const [search, setSearch] = useState('');
   const [credentials, setCredentials] = useState<Credential[]>([]);
   const [sites, setSites] = useState<SiteOption[]>([]);
+  const [alertMsg, setAlertMsg] = useState<{ type: string; message: string } | null>(null);
 
   const fetchEquipos = async () => {
     const res = await fetch('/api/equipos');
@@ -50,22 +51,30 @@ export default function Equipos({ role }: { role: string }) {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await fetch('/api/equipos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ip, credentialId: Number(credentialId), siteId: siteId ? Number(siteId) : null, type }),
-    });
-    if (res.status === 201) {
-      alert('Agregado con éxito');
-      setIp('');
-      setCredentialId('');
-      setSiteId('');
-      setType('Mikrotik');
-      fetchEquipos();
-    } else if (res.status === 409) {
-      alert('El equipo ya se encuentra en la base de datos');
-    } else {
-      alert('Error al agregar');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    try {
+      const res = await fetch('/api/equipos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ip, credentialId: Number(credentialId), siteId: siteId ? Number(siteId) : null, type }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (res.status === 201) {
+        setAlertMsg({ type: 'success', message: 'Equipo agregado con éxito' });
+        setIp('');
+        setCredentialId('');
+        setSiteId('');
+        setType('Mikrotik');
+        fetchEquipos();
+      } else if (res.status === 409) {
+        setAlertMsg({ type: 'warning', message: 'El equipo ya se encuentra en la base de datos' });
+      } else {
+        setAlertMsg({ type: 'danger', message: 'Error al agregar equipo' });
+      }
+    } catch (err) {
+      setAlertMsg({ type: 'danger', message: 'El equipo no responde, no se pudo agregar' });
     }
   };
 
@@ -82,6 +91,12 @@ export default function Equipos({ role }: { role: string }) {
     <div className="d-flex">
       <Sidebar role={role} />
       <div className="p-4 flex-grow-1">
+        {alertMsg && (
+          <div className={`alert alert-${alertMsg.type} alert-dismissible fade show`} role="alert">
+            {alertMsg.message}
+            <button type="button" className="btn-close" onClick={() => setAlertMsg(null)}></button>
+          </div>
+        )}
         <h2>Equipos</h2>
         <div className="d-flex justify-content-between align-items-center mb-3">
           <SearchBar value={search} onChange={setSearch} />
