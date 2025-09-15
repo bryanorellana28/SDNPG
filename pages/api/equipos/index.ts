@@ -35,11 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       let portsData: { physicalName: string; description: string; status: string }[] = [];
       if (type === 'Mikrotik') {
         stdout = (await ssh.execCommand('/system routerboard print')).stdout;
-        const portsOutput = (
-          await ssh.execCommand(
-            ':foreach i in=[/interface find] do={\n    :put ([/interface get $i name] . " - " . [/interface get $i default-name])\n}'
-          )
-        ).stdout;
+        const portsOutput = (await ssh.execCommand('/interface ethernet export')).stdout;
         portsData = parseMikrotikPorts(portsOutput);
       } else {
         stdout = (await ssh.execCommand('show version')).stdout;
@@ -118,21 +114,28 @@ function parseCiscoVersion(output: string) {
 }
 
 function parseMikrotikPorts(output: string) {
-  const separator = ' - ';
+  const stripQuotes = (value: string | undefined) => {
+    if (!value) return '';
+    if (/^(['"]).*\1$/.test(value)) {
+      return value.slice(1, -1);
+    }
+    return value;
+  };
+
   return output
     .split(/\r?\n/)
     .map(line => line.trim())
-    .filter(Boolean)
+    .filter(line => line.startsWith('set '))
     .map(line => {
-      const dashIndex = line.indexOf(separator);
-      let physicalName = line;
-      let description = '';
-      if (dashIndex !== -1) {
-        physicalName = line.slice(0, dashIndex).trim();
-        description = line.slice(dashIndex + separator.length).trim();
-      }
-      if (!description) description = physicalName;
-      const status = physicalName.localeCompare(description, undefined, { sensitivity: 'accent' }) === 0 ? 'Puerto Libre' : 'Asignado';
+      const defaultNameMatch = line.match(/default-name=(["'][^"']*["']|\S+)/i);
+      const nameMatch = line.match(/name=(["'][^"']*["']|\S+)/i);
+
+      const physicalName = stripQuotes(defaultNameMatch?.[1]) || '';
+      const description = stripQuotes(nameMatch?.[1]) || physicalName;
+      const status =
+        physicalName.localeCompare(description, undefined, { sensitivity: 'accent' }) === 0 ? 'Puerto Libre' : 'Asignado';
+
       return { physicalName, description, status };
-    });
+    })
+    .filter(port => port.physicalName);
 }
