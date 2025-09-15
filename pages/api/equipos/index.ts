@@ -35,8 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       let portsData: { physicalName: string; description: string; status: string }[] = [];
       if (type === 'Mikrotik') {
         stdout = (await ssh.execCommand('/system routerboard print')).stdout;
-        const portsOutput = (await ssh.execCommand('/interface ethernet export')).stdout;
-        portsData = parseMikrotikPorts(portsOutput);
+        portsData = await getMikrotikPorts(ssh);
       } else {
         stdout = (await ssh.execCommand('show version')).stdout;
       }
@@ -113,29 +112,71 @@ function parseCiscoVersion(output: string) {
   return match ? match[1] : '';
 }
 
-function parseMikrotikPorts(output: string) {
-  const stripQuotes = (value: string | undefined) => {
-    if (!value) return '';
-    if (/^(['"]).*\1$/.test(value)) {
-      return value.slice(1, -1);
+async function getMikrotikPorts(ssh: NodeSSH) {
+  const detailOutput = (await ssh.execCommand('/interface ethernet print detail without-paging')).stdout;
+  const physicalNames = parseMikrotikDefaultNames(detailOutput);
+
+  const ports: { physicalName: string; description: string; status: string }[] = [];
+
+  for (const physicalName of physicalNames) {
+    if (!physicalName) continue;
+
+    let description = '';
+    try {
+      const command = `/interface ethernet print without-paging where default-name="${physicalName.replace(/"/g, '""')}"`;
+      const { stdout } = await ssh.execCommand(command);
+      description = parseMikrotikInterfaceName(stdout);
+    } catch (error) {
+      description = '';
     }
-    return value;
-  };
 
-  return output
-    .split(/\r?\n/)
-    .map(line => line.trim())
-    .filter(line => line.startsWith('set '))
-    .map(line => {
-      const defaultNameMatch = line.match(/default-name=(["'][^"']*["']|\S+)/i);
-      const nameMatch = line.match(/name=(["'][^"']*["']|\S+)/i);
+    const finalDescription = description || physicalName;
+    const status =
+      physicalName.localeCompare(finalDescription, undefined, { sensitivity: 'accent' }) === 0 ? 'Puerto Libre' : 'Asignado';
+    ports.push({ physicalName, description: finalDescription, status });
+  }
 
-      const physicalName = stripQuotes(defaultNameMatch?.[1]) || '';
-      const description = stripQuotes(nameMatch?.[1]) || physicalName;
-      const status =
-        physicalName.localeCompare(description, undefined, { sensitivity: 'accent' }) === 0 ? 'Puerto Libre' : 'Asignado';
+  return ports;
+}
 
-      return { physicalName, description, status };
-    })
-    .filter(port => port.physicalName);
+function parseMikrotikDefaultNames(output: string) {
+  const matches = output.matchAll(/default-name=(["'][^"']*["']|\S+)/gi);
+  const names: string[] = [];
+
+  for (const match of matches) {
+    const physicalName = stripQuotes(match[1]);
+    if (physicalName && !names.includes(physicalName)) {
+      names.push(physicalName);
+    }
+  }
+
+  return names;
+}
+
+function parseMikrotikInterfaceName(output: string) {
+  if (!output) return '';
+  const lines = output.split(/\r?\n/);
+  const dataLine = lines.find(line => /^\s*\d+/.test(line));
+  if (!dataLine) return '';
+
+  const headerLine = lines.find(line => /\bNAME\b/i.test(line) && /\bMTU\b/i.test(line));
+  if (headerLine) {
+    const nameStart = headerLine.indexOf('NAME');
+    const mtuStart = headerLine.indexOf('MTU');
+    if (nameStart >= 0) {
+      const raw = dataLine.slice(nameStart, mtuStart > nameStart ? mtuStart : undefined).trim();
+      if (raw) return raw;
+    }
+  }
+
+  const tokens = dataLine.trim().split(/\s+/);
+  return tokens.length >= 3 ? tokens[2] : '';
+}
+
+function stripQuotes(value: string | undefined) {
+  if (!value) return '';
+  if (/^(['"]).*\1$/.test(value)) {
+    return value.slice(1, -1);
+  }
+  return value;
 }
