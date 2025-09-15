@@ -18,38 +18,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).end('Method Not Allowed');
   }
 
-  const { equipmentId, action } = req.body;
+  const { equipmentId, command } = req.body;
   const eq = await prisma.equipment.findUnique({
     where: { id: Number(equipmentId) },
     include: { credential: true },
   });
   if (!eq || !eq.credential) return res.status(404).json({ message: 'Equipment not found' });
 
+  if (!command || typeof command !== 'string' || !command.trim()) {
+    return res.status(400).json({ message: 'No command provided' });
+  }
+
   const ssh = new NodeSSH();
   try {
     await ssh.connect({ host: eq.ip, username: eq.credential.username, password: eq.credential.password });
-    let command = '';
-    switch (action) {
-      case 'port':
-        command = '/interface ethernet print';
-        break;
-      case 'communication':
-        command = 'ping 8.8.8.8 count=4';
-        break;
-      case 'cpu':
-        command = '/system resource print';
-        break;
-      case 'memory':
-        command = '/system resource print';
-        break;
-      case 'logs':
-        command = '/log print without-paging';
-        break;
-      default:
-        return res.status(400).json({ message: 'Unknown action' });
-    }
-    const result = await ssh.execCommand(command);
-    return res.status(200).json({ output: result.stdout });
+    const result = await ssh.execCommand(command.trim());
+    const output = [result.stdout, result.stderr].filter(Boolean).join('\n');
+    return res.status(200).json({ output: output || 'Comando ejecutado sin salida' });
   } catch {
     return res.status(500).json({ message: 'SSH connection failed' });
   } finally {

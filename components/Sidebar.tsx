@@ -44,6 +44,11 @@ export default function Sidebar({ role }: SidebarProps) {
                 </Link>
               </li>
               <li>
+                <Link href="/equipos/puertos" className="nav-link link-light ms-3">
+                  Inventario puertos
+                </Link>
+              </li>
+              <li>
                 <Link href="/sites" className="nav-link link-light ms-3">
                   Sitios
                 </Link>

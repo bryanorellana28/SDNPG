@@ -32,8 +32,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       await ssh.connect({ host: ip, username: cred.username, password: cred.password });
       let stdout = '';
+      let portsData: { physicalName: string; description: string; status: string }[] = [];
       if (type === 'Mikrotik') {
         stdout = (await ssh.execCommand('/system routerboard print')).stdout;
+        const portsOutput = (
+          await ssh.execCommand(
+            ':foreach i in=[/interface find] do={\n    :put ([/interface get $i name] . " - " . [/interface get $i default-name])\n}'
+          )
+        ).stdout;
+        portsData = parseMikrotikPorts(portsOutput);
       } else {
         stdout = (await ssh.execCommand('show version')).stdout;
       }
@@ -69,6 +76,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           modelId: model.id,
         },
       });
+      if (portsData.length) {
+        try {
+          await prisma.portInventory.createMany({
+            data: portsData.map(port => ({
+              equipmentId: eq.id,
+              physicalName: port.physicalName,
+              description: port.description,
+              status: port.status,
+            })),
+          });
+        } catch (err) {
+          console.error('No se pudo guardar el inventario de puertos', err);
+        }
+      }
       try {
         await runBackup(eq.id);
       } catch (e) {
@@ -94,4 +115,24 @@ function parseLine(output: string, key: string) {
 function parseCiscoVersion(output: string) {
   const match = output.match(/Version\s+([^,\s]+)/i);
   return match ? match[1] : '';
+}
+
+function parseMikrotikPorts(output: string) {
+  const separator = ' - ';
+  return output
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => {
+      const dashIndex = line.indexOf(separator);
+      let physicalName = line;
+      let description = '';
+      if (dashIndex !== -1) {
+        physicalName = line.slice(0, dashIndex).trim();
+        description = line.slice(dashIndex + separator.length).trim();
+      }
+      if (!description) description = physicalName;
+      const status = physicalName.localeCompare(description, undefined, { sensitivity: 'accent' }) === 0 ? 'Puerto Libre' : 'Asignado';
+      return { physicalName, description, status };
+    });
 }
