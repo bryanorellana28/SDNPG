@@ -13,6 +13,7 @@ interface Equipment {
   serial: string;
   version: string;
   type: string;
+  networkRole: string;
   site?: { nombre: string } | null;
 }
 
@@ -32,6 +33,7 @@ export default function Equipos({ role }: { role: string }) {
   const [credentialId, setCredentialId] = useState('');
   const [siteId, setSiteId] = useState('');
   const [type, setType] = useState('Mikrotik');
+  const [networkRole, setNetworkRole] = useState('Nodo');
   const [search, setSearch] = useState('');
   const [credentials, setCredentials] = useState<Credential[]>([]);
   const [sites, setSites] = useState<SiteOption[]>([]);
@@ -57,7 +59,13 @@ export default function Equipos({ role }: { role: string }) {
       const res = await fetch('/api/equipos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ip, credentialId: Number(credentialId), siteId: siteId ? Number(siteId) : null, type }),
+        body: JSON.stringify({
+          ip,
+          credentialId: Number(credentialId),
+          siteId: siteId ? Number(siteId) : null,
+          type,
+          networkRole,
+        }),
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
@@ -67,6 +75,7 @@ export default function Equipos({ role }: { role: string }) {
         setCredentialId('');
         setSiteId('');
         setType('Mikrotik');
+        setNetworkRole('Nodo');
         fetchEquipos();
       } else if (res.status === 409) {
         setAlertMsg({ type: 'warning', message: 'El equipo ya se encuentra en la base de datos' });
@@ -113,6 +122,7 @@ export default function Equipos({ role }: { role: string }) {
               <th>Serial</th>
               <th>Versión</th>
               <th>Tipo</th>
+              <th>Rol</th>
               <th>Sitio</th>
               <th>Acciones</th>
             </tr>
@@ -126,6 +136,7 @@ export default function Equipos({ role }: { role: string }) {
                 <td>{e.serial}</td>
                 <td>{e.version}</td>
                 <td>{e.type}</td>
+                <td>{e.networkRole}</td>
                 <td>{e.site?.nombre || ''}</td>
                 <td>
                   <button className="btn btn-sm btn-danger" onClick={() => handleDelete(e.id)}>
@@ -167,6 +178,12 @@ export default function Equipos({ role }: { role: string }) {
               <select className="form-select" value={type} onChange={e => setType(e.target.value)}>
                 <option value="Cisco">Cisco</option>
                 <option value="Mikrotik">Mikrotik</option>
+              </select>
+            </div>
+            <div className="mb-3">
+              <select className="form-select" value={networkRole} onChange={e => setNetworkRole(e.target.value)}>
+                <option value="Nodo">Nodo</option>
+                <option value="Cliente">Cliente</option>
               </select>
             </div>
             <button className="btn btn-primary" type="submit">Guardar</button>
