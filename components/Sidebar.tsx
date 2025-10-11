@@ -31,6 +31,12 @@ export default function Sidebar({ role }: SidebarProps) {
       <hr className="border-secondary" />
       <ul className="nav nav-pills flex-column mb-auto">
         <li className="nav-item">
+          <Link href="/dashboard" className="nav-link text-white">
+            Dashboard
+          </Link>
+        </li>
+
+        <li className="nav-item mt-3">
           <button
             className="nav-link text-start w-100 bg-transparent border-0 text-white"
             onClick={() => setShowInventory(!showInventory)}
