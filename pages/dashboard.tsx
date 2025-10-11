@@ -1,7 +1,7 @@
 import { GetServerSideProps } from 'next';
 import { parse } from 'cookie';
 import jwt from 'jsonwebtoken';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Script from 'next/script';
 import Sidebar from '../components/Sidebar';
 
@@ -9,97 +9,76 @@ interface DashboardProps {
   role: string;
 }
 
-interface NetworkMetric {
-  site: string;
-  uptime: number;
-  incidents: number;
-  latency: number;
-  throughput: number;
-  satisfaction: number;
+interface CountItem {
+  label: string;
+  count: number;
 }
 
-interface AggregatedSatisfaction {
-  excellent: number;
-  good: number;
-  fair: number;
+interface SiteDetail {
+  id: number;
+  nombre: string;
+  ubicacion: string | null;
+  zona: string | null;
+  direccion: string | null;
+  totalEquipments: number;
+  nodeCount: number;
+  clientCount: number;
+}
+
+interface DashboardData {
+  summary: {
+    totalSites: number;
+    totalEquipments: number;
+    totalServices: number;
+    totalBackups: number;
+    totalClients: number;
+  };
+  equipmentBySite: CountItem[];
+  equipmentByRole: CountItem[];
+  equipmentByType: CountItem[];
+  servicesByType: CountItem[];
+  backupsByDate: { date: string; count: number }[];
+  siteDetails: SiteDetail[];
 }
 
 export default function Dashboard({ role }: DashboardProps) {
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [chartReady, setChartReady] = useState(false);
-  const availabilityChartRef = useRef<HTMLCanvasElement | null>(null);
-  const incidentsChartRef = useRef<HTMLCanvasElement | null>(null);
-  const throughputChartRef = useRef<HTMLCanvasElement | null>(null);
-  const satisfactionChartRef = useRef<HTMLCanvasElement | null>(null);
 
-  const availabilityChartInstance = useRef<any>(null);
-  const incidentsChartInstance = useRef<any>(null);
-  const throughputChartInstance = useRef<any>(null);
-  const satisfactionChartInstance = useRef<any>(null);
+  const sitesChartRef = useRef<HTMLCanvasElement | null>(null);
+  const rolesChartRef = useRef<HTMLCanvasElement | null>(null);
+  const typesChartRef = useRef<HTMLCanvasElement | null>(null);
+  const backupsChartRef = useRef<HTMLCanvasElement | null>(null);
 
-  const networkData = useMemo<NetworkMetric[]>(
-    () => [
-      { site: 'Nodo Norte', uptime: 99.2, incidents: 1, latency: 22, throughput: 940, satisfaction: 94 },
-      { site: 'Nodo Sur', uptime: 98.7, incidents: 2, latency: 28, throughput: 880, satisfaction: 91 },
-      { site: 'Nodo Centro', uptime: 99.6, incidents: 0, latency: 19, throughput: 1010, satisfaction: 97 },
-      { site: 'Nodo Este', uptime: 98.1, incidents: 3, latency: 34, throughput: 860, satisfaction: 88 },
-      { site: 'Nodo Oeste', uptime: 97.9, incidents: 4, latency: 36, throughput: 820, satisfaction: 85 },
-      { site: 'Data Center 1', uptime: 99.9, incidents: 0, latency: 15, throughput: 1200, satisfaction: 99 },
-      { site: 'Data Center 2', uptime: 99.4, incidents: 1, latency: 18, throughput: 1105, satisfaction: 96 },
-      { site: 'Sucursal A', uptime: 97.2, incidents: 5, latency: 41, throughput: 720, satisfaction: 82 },
-      { site: 'Sucursal B', uptime: 96.8, incidents: 6, latency: 45, throughput: 690, satisfaction: 78 },
-      { site: 'Sucursal C', uptime: 97.5, incidents: 4, latency: 39, throughput: 705, satisfaction: 81 },
-      { site: 'Sucursal D', uptime: 98.3, incidents: 3, latency: 33, throughput: 760, satisfaction: 86 },
-      { site: 'Nodo Frontera', uptime: 99.1, incidents: 1, latency: 25, throughput: 915, satisfaction: 92 },
-      { site: 'Nodo Internacional', uptime: 98.8, incidents: 2, latency: 27, throughput: 940, satisfaction: 90 },
-      { site: 'Nodo Satelital', uptime: 95.9, incidents: 7, latency: 58, throughput: 610, satisfaction: 74 },
-      { site: 'Nodo Marino', uptime: 97.7, incidents: 4, latency: 37, throughput: 780, satisfaction: 83 },
-      { site: 'Nodo Urbano', uptime: 98.9, incidents: 2, latency: 29, throughput: 905, satisfaction: 89 },
-      { site: 'Nodo Rural', uptime: 96.3, incidents: 6, latency: 47, throughput: 655, satisfaction: 77 },
-      { site: 'Nodo Montaña', uptime: 97.1, incidents: 5, latency: 43, throughput: 700, satisfaction: 80 },
-      { site: 'Nodo Selva', uptime: 95.5, incidents: 8, latency: 61, throughput: 580, satisfaction: 72 },
-      { site: 'Nodo Desierto', uptime: 96.6, incidents: 6, latency: 49, throughput: 640, satisfaction: 76 },
-    ],
-    [],
-  );
-
-  const summary = useMemo(() => {
-    const totalSites = networkData.length;
-    const totalIncidents = networkData.reduce((acc, item) => acc + item.incidents, 0);
-    const averageAvailability =
-      networkData.reduce((acc, item) => acc + item.uptime, 0) / totalSites;
-    const averageLatency = networkData.reduce((acc, item) => acc + item.latency, 0) / totalSites;
-    const averageThroughput =
-      networkData.reduce((acc, item) => acc + item.throughput, 0) / totalSites;
-    const excellentSatisfaction = networkData.filter((item) => item.satisfaction >= 90).length;
-
-    return {
-      totalSites,
-      totalIncidents,
-      averageAvailability,
-      averageLatency,
-      averageThroughput,
-      excellentSatisfaction,
-    };
-  }, [networkData]);
-
-  const satisfactionBuckets = useMemo<AggregatedSatisfaction>(() => {
-    return networkData.reduce(
-      (acc, item) => {
-        if (item.satisfaction >= 90) {
-          acc.excellent += 1;
-        } else if (item.satisfaction >= 80) {
-          acc.good += 1;
-        } else {
-          acc.fair += 1;
-        }
-        return acc;
-      },
-      { excellent: 0, good: 0, fair: 0 },
-    );
-  }, [networkData]);
+  const sitesChartInstance = useRef<any>(null);
+  const rolesChartInstance = useRef<any>(null);
+  const typesChartInstance = useRef<any>(null);
+  const backupsChartInstance = useRef<any>(null);
 
   useEffect(() => {
-    if (!chartReady) {
+    const fetchDashboard = async () => {
+      try {
+        const response = await fetch('/api/dashboard');
+        if (!response.ok) {
+          throw new Error('No se pudo obtener la información del dashboard');
+        }
+        const data: DashboardData = await response.json();
+        setDashboardData(data);
+      } catch (err) {
+        console.error(err);
+        setError('No se pudo cargar la información desde la base de datos.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboard();
+  }, []);
+
+  useEffect(() => {
+    if (!chartReady || !dashboardData) {
       return;
     }
 
@@ -108,66 +87,34 @@ export default function Dashboard({ role }: DashboardProps) {
       return;
     }
 
-    const labels = networkData.map((item) => item.site);
-    const availabilityData = networkData.map((item) => item.uptime);
-    const incidentData = networkData.map((item) => item.incidents);
-    const throughputData = networkData.map((item) => item.throughput);
-    const satisfactionData = [
-      satisfactionBuckets.excellent,
-      satisfactionBuckets.good,
-      satisfactionBuckets.fair,
-    ];
+    const topSites = dashboardData.equipmentBySite.slice(0, 12);
+    const siteLabels = topSites.map((item) => item.label);
+    const siteCounts = topSites.map((item) => item.count);
 
-    availabilityChartInstance.current?.destroy();
-    incidentsChartInstance.current?.destroy();
-    throughputChartInstance.current?.destroy();
-    satisfactionChartInstance.current?.destroy();
+    const roleLabels = dashboardData.equipmentByRole.map((item) => item.label);
+    const roleCounts = dashboardData.equipmentByRole.map((item) => item.count);
 
-    if (availabilityChartRef.current) {
-      availabilityChartInstance.current = new Chart(availabilityChartRef.current, {
-        type: 'line',
-        data: {
-          labels,
-          datasets: [
-            {
-              label: 'Disponibilidad (%)',
-              data: availabilityData,
-              borderColor: '#0d6efd',
-              backgroundColor: 'rgba(13, 110, 253, 0.2)',
-              tension: 0.3,
-              fill: true,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { display: false },
-            tooltip: { mode: 'index', intersect: false },
-          },
-          scales: {
-            y: {
-              suggestedMin: 90,
-              suggestedMax: 100,
-              ticks: {
-                callback: (value: number | string) => `${value}%`,
-              },
-            },
-          },
-        },
-      });
-    }
+    const typeLabels = dashboardData.equipmentByType.map((item) => item.label);
+    const typeCounts = dashboardData.equipmentByType.map((item) => item.count);
 
-    if (incidentsChartRef.current) {
-      incidentsChartInstance.current = new Chart(incidentsChartRef.current, {
+    const backupsLabels = dashboardData.backupsByDate.map((item) => item.date);
+    const backupsCounts = dashboardData.backupsByDate.map((item) => item.count);
+
+    sitesChartInstance.current?.destroy();
+    rolesChartInstance.current?.destroy();
+    typesChartInstance.current?.destroy();
+    backupsChartInstance.current?.destroy();
+
+    if (sitesChartRef.current && siteLabels.length > 0) {
+      sitesChartInstance.current = new Chart(sitesChartRef.current, {
         type: 'bar',
         data: {
-          labels,
+          labels: siteLabels,
           datasets: [
             {
-              label: 'Incidentes',
-              data: incidentData,
-              backgroundColor: '#dc3545',
+              label: 'Equipos por sitio',
+              data: siteCounts,
+              backgroundColor: '#0d6efd',
               borderRadius: 6,
             },
           ],
@@ -192,45 +139,15 @@ export default function Dashboard({ role }: DashboardProps) {
       });
     }
 
-    if (throughputChartRef.current) {
-      throughputChartInstance.current = new Chart(throughputChartRef.current, {
-        type: 'line',
-        data: {
-          labels,
-          datasets: [
-            {
-              label: 'Ancho de banda (Mbps)',
-              data: throughputData,
-              borderColor: '#198754',
-              backgroundColor: 'rgba(25, 135, 84, 0.2)',
-              fill: true,
-              tension: 0.3,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { display: false },
-          },
-          scales: {
-            y: {
-              beginAtZero: false,
-            },
-          },
-        },
-      });
-    }
-
-    if (satisfactionChartRef.current) {
-      satisfactionChartInstance.current = new Chart(satisfactionChartRef.current, {
+    if (rolesChartRef.current && roleLabels.length > 0) {
+      rolesChartInstance.current = new Chart(rolesChartRef.current, {
         type: 'doughnut',
         data: {
-          labels: ['Excelente (≥90%)', 'Buena (80-89%)', 'Regular (<80%)'],
+          labels: roleLabels,
           datasets: [
             {
-              data: satisfactionData,
-              backgroundColor: ['#20c997', '#0dcaf0', '#ffc107'],
+              data: roleCounts,
+              backgroundColor: ['#0d6efd', '#20c997', '#ffc107', '#dc3545'],
               borderWidth: 0,
             },
           ],
@@ -246,13 +163,77 @@ export default function Dashboard({ role }: DashboardProps) {
       });
     }
 
+    if (typesChartRef.current && typeLabels.length > 0) {
+      typesChartInstance.current = new Chart(typesChartRef.current, {
+        type: 'bar',
+        data: {
+          labels: typeLabels,
+          datasets: [
+            {
+              label: 'Equipos por tipo',
+              data: typeCounts,
+              backgroundColor: '#198754',
+              borderRadius: 6,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                precision: 0,
+              },
+            },
+          },
+        },
+      });
+    }
+
+    if (backupsChartRef.current && backupsLabels.length > 0) {
+      backupsChartInstance.current = new Chart(backupsChartRef.current, {
+        type: 'line',
+        data: {
+          labels: backupsLabels,
+          datasets: [
+            {
+              label: 'Respaldos por día',
+              data: backupsCounts,
+              borderColor: '#6610f2',
+              backgroundColor: 'rgba(102, 16, 242, 0.2)',
+              tension: 0.3,
+              fill: true,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                precision: 0,
+              },
+            },
+          },
+        },
+      });
+    }
+
     return () => {
-      availabilityChartInstance.current?.destroy();
-      incidentsChartInstance.current?.destroy();
-      throughputChartInstance.current?.destroy();
-      satisfactionChartInstance.current?.destroy();
+      sitesChartInstance.current?.destroy();
+      rolesChartInstance.current?.destroy();
+      typesChartInstance.current?.destroy();
+      backupsChartInstance.current?.destroy();
     };
-  }, [chartReady, networkData, satisfactionBuckets]);
+  }, [chartReady, dashboardData]);
 
   return (
     <div className="d-flex bg-light">
@@ -262,142 +243,206 @@ export default function Dashboard({ role }: DashboardProps) {
           <div>
             <h1 className="mb-1">Dashboard</h1>
             <p className="text-muted mb-0">
-              Visualiza el estado general de los nodos con métricas clave y tendencias.
+              Visualiza indicadores clave construidos a partir de los datos reales registrados en la plataforma.
             </p>
           </div>
         </div>
 
-        <div className="row g-4 mb-4">
-          <div className="col-12 col-md-6 col-xl-3">
-            <div className="card shadow-sm border-0 h-100">
-              <div className="card-body">
-                <h6 className="text-uppercase text-muted">Disponibilidad promedio</h6>
-                <h3 className="fw-bold mb-0">{summary.averageAvailability.toFixed(2)}%</h3>
-                <small className="text-success">{summary.totalSites} nodos monitoreados</small>
-              </div>
-            </div>
+        {error && (
+          <div className="alert alert-danger" role="alert">
+            {error}
           </div>
-          <div className="col-12 col-md-6 col-xl-3">
-            <div className="card shadow-sm border-0 h-100">
-              <div className="card-body">
-                <h6 className="text-uppercase text-muted">Incidentes reportados</h6>
-                <h3 className="fw-bold mb-0">{summary.totalIncidents}</h3>
-                <small className="text-danger">Consolidado de los últimos 30 días</small>
-              </div>
-            </div>
-          </div>
-          <div className="col-12 col-md-6 col-xl-3">
-            <div className="card shadow-sm border-0 h-100">
-              <div className="card-body">
-                <h6 className="text-uppercase text-muted">Latencia promedio</h6>
-                <h3 className="fw-bold mb-0">{summary.averageLatency.toFixed(1)} ms</h3>
-                <small className="text-muted">Medición regional consolidada</small>
-              </div>
-            </div>
-          </div>
-          <div className="col-12 col-md-6 col-xl-3">
-            <div className="card shadow-sm border-0 h-100">
-              <div className="card-body">
-                <h6 className="text-uppercase text-muted">Satisfacción destacada</h6>
-                <h3 className="fw-bold mb-0">{summary.excellentSatisfaction}</h3>
-                <small className="text-success">Nodos con satisfacción ≥ 90%</small>
-              </div>
-            </div>
-          </div>
-        </div>
+        )}
 
-        <div className="row g-4 mb-4">
-          <div className="col-12 col-lg-6">
-            <div className="card shadow-sm border-0 h-100">
-              <div className="card-body">
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <h5 className="card-title mb-0">Tendencia de disponibilidad</h5>
-                  <span className="badge bg-primary-subtle text-primary">% Uptime</span>
+        {loading && !dashboardData ? (
+          <div className="text-center py-5">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Cargando...</span>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="row g-4 mb-4">
+              <div className="col-12 col-md-6 col-xl-3">
+                <div className="card shadow-sm border-0 h-100">
+                  <div className="card-body">
+                    <h6 className="text-uppercase text-muted">Sitios registrados</h6>
+                    <h3 className="fw-bold mb-0">{dashboardData?.summary.totalSites ?? 0}</h3>
+                    <small className="text-muted">{dashboardData?.summary.totalClients ?? 0} clientes vinculados</small>
+                  </div>
                 </div>
-                <div className="position-relative" style={{ minHeight: '280px' }}>
-                  <canvas ref={availabilityChartRef} />
+              </div>
+              <div className="col-12 col-md-6 col-xl-3">
+                <div className="card shadow-sm border-0 h-100">
+                  <div className="card-body">
+                    <h6 className="text-uppercase text-muted">Equipos monitoreados</h6>
+                    <h3 className="fw-bold mb-0">{dashboardData?.summary.totalEquipments ?? 0}</h3>
+                    <small className="text-muted">Información consolidada desde inventario</small>
+                  </div>
+                </div>
+              </div>
+              <div className="col-12 col-md-6 col-xl-3">
+                <div className="card shadow-sm border-0 h-100">
+                  <div className="card-body">
+                    <h6 className="text-uppercase text-muted">Servicios activos</h6>
+                    <h3 className="fw-bold mb-0">{dashboardData?.summary.totalServices ?? 0}</h3>
+                    <small className="text-muted">Distribución por tipo según catálogo</small>
+                  </div>
+                </div>
+              </div>
+              <div className="col-12 col-md-6 col-xl-3">
+                <div className="card shadow-sm border-0 h-100">
+                  <div className="card-body">
+                    <h6 className="text-uppercase text-muted">Respaldos registrados</h6>
+                    <h3 className="fw-bold mb-0">{dashboardData?.summary.totalBackups ?? 0}</h3>
+                    <small className="text-muted">Histórico cargado desde la base de datos</small>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          <div className="col-12 col-lg-6">
-            <div className="card shadow-sm border-0 h-100">
-              <div className="card-body">
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <h5 className="card-title mb-0">Incidentes por nodo</h5>
-                  <span className="badge bg-danger-subtle text-danger">Eventos</span>
-                </div>
-                <div className="position-relative" style={{ minHeight: '280px' }}>
-                  <canvas ref={incidentsChartRef} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        <div className="row g-4 mb-4">
-          <div className="col-12 col-lg-6">
-            <div className="card shadow-sm border-0 h-100">
-              <div className="card-body">
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <h5 className="card-title mb-0">Ancho de banda promedio</h5>
-                  <span className="badge bg-success-subtle text-success">Mbps</span>
+            <div className="row g-4 mb-4">
+              <div className="col-12 col-lg-6">
+                <div className="card shadow-sm border-0 h-100">
+                  <div className="card-body">
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                      <h5 className="card-title mb-0">Inventario por sitio</h5>
+                      <span className="badge bg-primary-subtle text-primary">Equipos</span>
+                    </div>
+                    <div className="position-relative" style={{ minHeight: '280px' }}>
+                      {dashboardData && dashboardData.equipmentBySite.length > 0 ? (
+                        <canvas ref={sitesChartRef} />
+                      ) : (
+                        <div className="text-muted text-center pt-5">No hay datos disponibles.</div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="position-relative" style={{ minHeight: '280px' }}>
-                  <canvas ref={throughputChartRef} />
+              </div>
+              <div className="col-12 col-lg-6">
+                <div className="card shadow-sm border-0 h-100">
+                  <div className="card-body">
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                      <h5 className="card-title mb-0">Distribución por rol</h5>
+                      <span className="badge bg-info-subtle text-info">Roles</span>
+                    </div>
+                    <div className="position-relative" style={{ minHeight: '280px' }}>
+                      {dashboardData && dashboardData.equipmentByRole.length > 0 ? (
+                        <canvas ref={rolesChartRef} />
+                      ) : (
+                        <div className="text-muted text-center pt-5">No hay datos disponibles.</div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          <div className="col-12 col-lg-6">
-            <div className="card shadow-sm border-0 h-100">
-              <div className="card-body">
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <h5 className="card-title mb-0">Distribución de satisfacción</h5>
-                  <span className="badge bg-info-subtle text-info">Clientes</span>
-                </div>
-                <div className="position-relative" style={{ minHeight: '280px' }}>
-                  <canvas ref={satisfactionChartRef} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        <div className="card shadow-sm border-0">
-          <div className="card-body">
-            <h5 className="card-title">Detalle de métricas por nodo</h5>
-            <p className="text-muted">
-              20 puntos de datos recopilados para evaluar la estabilidad, incidencias y satisfacción por ubicación.
-            </p>
-            <div className="table-responsive">
-              <table className="table table-striped align-middle mb-0">
-                <thead className="table-dark">
-                  <tr>
-                    <th>Ubicación</th>
-                    <th className="text-center">Disponibilidad (%)</th>
-                    <th className="text-center">Incidentes</th>
-                    <th className="text-center">Latencia (ms)</th>
-                    <th className="text-center">Ancho de banda (Mbps)</th>
-                    <th className="text-center">Satisfacción (%)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {networkData.map((item) => (
-                    <tr key={item.site}>
-                      <td>{item.site}</td>
-                      <td className="text-center">{item.uptime.toFixed(1)}</td>
-                      <td className="text-center">{item.incidents}</td>
-                      <td className="text-center">{item.latency}</td>
-                      <td className="text-center">{item.throughput}</td>
-                      <td className="text-center">{item.satisfaction}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="row g-4 mb-4">
+              <div className="col-12 col-lg-6">
+                <div className="card shadow-sm border-0 h-100">
+                  <div className="card-body">
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                      <h5 className="card-title mb-0">Equipos por tipo</h5>
+                      <span className="badge bg-success-subtle text-success">Inventario</span>
+                    </div>
+                    <div className="position-relative" style={{ minHeight: '280px' }}>
+                      {dashboardData && dashboardData.equipmentByType.length > 0 ? (
+                        <canvas ref={typesChartRef} />
+                      ) : (
+                        <div className="text-muted text-center pt-5">No hay datos disponibles.</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="col-12 col-lg-6">
+                <div className="card shadow-sm border-0 h-100">
+                  <div className="card-body">
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                      <h5 className="card-title mb-0">Respaldos diarios</h5>
+                      <span className="badge bg-warning-subtle text-warning">Backups</span>
+                    </div>
+                    <div className="position-relative" style={{ minHeight: '280px' }}>
+                      {dashboardData && dashboardData.backupsByDate.length > 0 ? (
+                        <canvas ref={backupsChartRef} />
+                      ) : (
+                        <div className="text-muted text-center pt-5">No hay datos disponibles.</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+
+            <div className="card shadow-sm border-0 mb-4">
+              <div className="card-body">
+                <h5 className="card-title">Servicios por tipo</h5>
+                <p className="text-muted">Resumen de servicios según la clasificación almacenada en la base de datos.</p>
+                {dashboardData && dashboardData.servicesByType.length > 0 ? (
+                  <div className="row g-3">
+                    {dashboardData.servicesByType.map((service) => (
+                      <div className="col-6 col-md-3" key={service.label}>
+                        <div className="bg-light rounded-3 p-3 text-center h-100">
+                          <h6 className="text-uppercase text-muted small mb-1">{service.label}</h6>
+                          <span className="fw-bold fs-4">{service.count}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted mb-0">No hay servicios registrados.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="card shadow-sm border-0">
+              <div className="card-body">
+                <h5 className="card-title">Detalle de sitios y equipamiento</h5>
+                <p className="text-muted">
+                  Información consolidada desde el inventario para conocer la distribución de equipos por sitio.
+                </p>
+                <div className="table-responsive">
+                  <table className="table table-striped align-middle mb-0">
+                    <thead className="table-dark">
+                      <tr>
+                        <th>Sitio</th>
+                        <th>Zona</th>
+                        <th>Ubicación</th>
+                        <th className="text-center">Equipos</th>
+                        <th className="text-center">Nodos</th>
+                        <th className="text-center">Clientes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dashboardData && dashboardData.siteDetails.length > 0 ? (
+                        dashboardData.siteDetails.map((item) => (
+                          <tr key={item.id}>
+                            <td>
+                              <div className="fw-semibold">{item.nombre}</div>
+                              {item.direccion && <small className="text-muted">{item.direccion}</small>}
+                            </td>
+                            <td>{item.zona || '-'}</td>
+                            <td>{item.ubicacion || '-'}</td>
+                            <td className="text-center">{item.totalEquipments}</td>
+                            <td className="text-center">{item.nodeCount}</td>
+                            <td className="text-center">{item.clientCount}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={6} className="text-center text-muted py-4">
+                            No hay sitios registrados.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       <Script
