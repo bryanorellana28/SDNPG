@@ -5,7 +5,18 @@ import { useEffect, useState } from 'react';
 import Sidebar from '../components/Sidebar';
 
 interface Client { id: number; name: string }
-interface Equipment { id: number; hostname: string }
+interface Equipment {
+  id: number;
+  hostname: string;
+  networkRole?: string;
+}
+
+interface Port {
+  id: number;
+  physicalName: string;
+  description: string;
+  status: string;
+}
 interface Service {
   id: number;
   type: string;
@@ -33,7 +44,16 @@ export default function Servicios({ role }: { role: string }) {
   const [clients, setClients] = useState<Client[]>([]);
   const [equipos, setEquipos] = useState<Equipment[]>([]);
   const [services, setServices] = useState<Service[]>([]);
-  const [form, setForm] = useState({ clientId: '', type: 'CAPA2', equipmentId: '', port: '', deviceModel: '' });
+  const [ports, setPorts] = useState<Port[]>([]);
+  const [portsLoading, setPortsLoading] = useState(false);
+  const [portError, setPortError] = useState('');
+  const [form, setForm] = useState({
+    clientId: '',
+    type: 'CAPA2',
+    equipmentId: '',
+    portId: '',
+    deviceModel: '',
+  });
 
   const fetchAll = async () => {
     const [cl, eq, sv] = await Promise.all([
@@ -50,20 +70,95 @@ export default function Servicios({ role }: { role: string }) {
     fetchAll();
   }, []);
 
+  const loadPorts = async (equipmentId: string) => {
+    if (!equipmentId) {
+      setPorts([]);
+      setPortError('');
+      return;
+    }
+    setPortsLoading(true);
+    setPortError('');
+    try {
+      const res = await fetch(`/api/ports/${equipmentId}`);
+      if (!res.ok) {
+        const msg = await res
+          .json()
+          .catch(() => ({ message: 'Error al cargar puertos del equipo seleccionado' }));
+        setPortError(msg.message || 'Error al cargar puertos del equipo seleccionado');
+        setPorts([]);
+        return;
+      }
+      const data = await res.json();
+      const allowedStatuses = new Set(['puerto libre', 'asignado']);
+      const filtered = (data.ports as Port[]).filter(port => {
+        const status = port.status?.toLowerCase() || '';
+        return allowedStatuses.has(status);
+      });
+      setPorts(filtered);
+    } catch (error) {
+      setPortError('No se pudo obtener la lista de puertos.');
+      setPorts([]);
+    } finally {
+      setPortsLoading(false);
+    }
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm(prev => {
+      if (name === 'type') {
+        return {
+          ...prev,
+          type: value,
+          equipmentId: '',
+          portId: '',
+          deviceModel: '',
+        };
+      }
+      if (name === 'equipmentId') {
+        return {
+          ...prev,
+          equipmentId: value,
+          portId: '',
+        };
+      }
+      return { ...prev, [name]: value };
+    });
+
+    if (name === 'type') {
+      setPorts([]);
+      setPortError('');
+    }
+
+    if (name === 'equipmentId') {
+      loadPorts(value);
+    }
   };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    await fetch('/api/services', {
+    const response = await fetch('/api/services', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
     });
-    setForm({ clientId: '', type: 'CAPA2', equipmentId: '', port: '', deviceModel: '' });
+    if (!response.ok) {
+      const msg = await response
+        .json()
+        .catch(() => ({ message: 'No se pudo guardar el servicio.' }));
+      alert(msg.message || 'No se pudo guardar el servicio.');
+      return;
+    }
+    setForm({ clientId: '', type: 'CAPA2', equipmentId: '', portId: '', deviceModel: '' });
+    setPorts([]);
+    setPortError('');
     fetchAll();
   };
+
+  const additionalNodes = equipos.filter(eq => {
+    const normalized = eq.networkRole?.toLowerCase() || '';
+    return normalized.includes('nodo') && normalized.includes('adicional');
+  });
 
   return (
     <div className="d-flex">
@@ -123,24 +218,47 @@ export default function Servicios({ role }: { role: string }) {
             {form.type === 'CAPA2' && (
               <>
                 <div className="mb-2">
-                  <select className="form-select" name="equipmentId" value={form.equipmentId} onChange={handleChange} required>
+                  <select
+                    className="form-select"
+                    name="equipmentId"
+                    value={form.equipmentId}
+                    onChange={handleChange}
+                    required
+                  >
                     <option value="">Seleccione equipo</option>
-                    {equipos.map(e => (
+                    {additionalNodes.map(e => (
                       <option key={e.id} value={e.id}>
                         {e.hostname}
                       </option>
                     ))}
                   </select>
+                  {!additionalNodes.length && (
+                    <div className="text-warning small mt-1">
+                      No hay equipos con rol de nodo adicional disponibles.
+                    </div>
+                  )}
                 </div>
                 <div className="mb-2">
-                  <input
-                    className="form-control"
-                    name="port"
-                    value={form.port}
+                  <select
+                    className="form-select"
+                    name="portId"
+                    value={form.portId}
                     onChange={handleChange}
-                    placeholder="Puerto"
+                    disabled={!form.equipmentId || portsLoading || !ports.length}
                     required
-                  />
+                  >
+                    <option value="">Seleccione puerto</option>
+                    {ports.map(port => (
+                      <option key={port.id} value={port.id}>
+                        {port.physicalName} ({port.status})
+                      </option>
+                    ))}
+                  </select>
+                  {portsLoading && <div className="form-text">Cargando puertos disponibles...</div>}
+                  {portError && <div className="text-danger small">{portError}</div>}
+                  {!portsLoading && !portError && form.equipmentId && !ports.length && (
+                    <div className="text-warning small">No hay puertos disponibles para asignar.</div>
+                  )}
                 </div>
               </>
             )}
