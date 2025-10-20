@@ -11,12 +11,11 @@ interface Site {
   clave: string;
   ubicacion: string;
   zona: string;
-  direccion: string;
 }
 
 export default function Sites({ role }: { role: string }) {
   const [sites, setSites] = useState<Site[]>([]);
-  const [form, setForm] = useState({ nombre: '', clave: '', ubicacion: '', zona: '', direccion: '' });
+  const [form, setForm] = useState({ nombre: '', clave: '', ubicacion: '', zona: '' });
   const [search, setSearch] = useState('');
 
   const fetchSites = async () => {
@@ -42,7 +41,7 @@ export default function Sites({ role }: { role: string }) {
     });
     if (res.status === 201) {
       alert('Agregada con éxito');
-      setForm({ nombre: '', clave: '', ubicacion: '', zona: '', direccion: '' });
+      setForm({ nombre: '', clave: '', ubicacion: '', zona: '' });
       fetchSites();
     } else if (res.status === 409) {
       alert('La dirección ya se encuentra en la base de datos');
@@ -78,22 +77,20 @@ export default function Sites({ role }: { role: string }) {
         <table className="table">
           <thead>
             <tr>
-              <th>Nombre</th>
               <th>Clave</th>
-              <th>Ubicación</th>
+              <th>Ubicación física</th>
               <th>Zona</th>
-              <th>Dirección</th>
+              <th>Nombre</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map(s => (
               <tr key={s.id}>
-                <td>{s.nombre}</td>
                 <td>{s.clave}</td>
                 <td>{s.ubicacion}</td>
                 <td>{s.zona}</td>
-                <td>{s.direccion}</td>
+                <td>{s.nombre}</td>
                 <td>
                   <button className="btn btn-sm btn-secondary me-2" onClick={() => handleEdit(s)}>
                     Editar
@@ -124,14 +121,18 @@ export default function Sites({ role }: { role: string }) {
             </div>
             <div className="row g-2 mt-2">
               <div className="col">
-                <input className="form-control" name="ubicacion" value={form.ubicacion} onChange={handleChange} placeholder="Ubicación" required />
+                <input
+                  className="form-control"
+                  name="ubicacion"
+                  value={form.ubicacion}
+                  onChange={handleChange}
+                  placeholder="Ubicación física"
+                  required
+                />
               </div>
               <div className="col">
                 <input className="form-control" name="zona" value={form.zona} onChange={handleChange} placeholder="Zona" required />
               </div>
-            </div>
-            <div className="mt-2">
-              <input className="form-control" name="direccion" value={form.direccion} onChange={handleChange} placeholder="Dirección" required />
             </div>
             <button className="btn btn-primary mt-2" type="submit">Agregar</button>
           </form>

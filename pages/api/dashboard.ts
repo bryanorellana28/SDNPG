@@ -24,7 +24,6 @@ type DashboardResponse = {
     nombre: string;
     ubicacion: string | null;
     zona: string | null;
-    direccion: string | null;
     totalEquipments: number;
     nodeCount: number;
     clientCount: number;
@@ -129,7 +128,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         nombre: site.nombre,
         ubicacion: site.ubicacion,
         zona: site.zona,
-        direccion: site.direccion,
         totalEquipments: site.equipments.length,
         nodeCount,
         clientCount,

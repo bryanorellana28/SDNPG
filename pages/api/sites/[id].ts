@@ -19,10 +19,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'PUT') {
-    const { nombre, clave, ubicacion, zona, direccion } = req.body;
+    const { nombre, clave, ubicacion, zona } = req.body;
     const site = await prisma.site.update({
       where: { id: Number(id) },
-      data: { nombre, clave, ubicacion, zona, direccion },
+      data: { nombre, clave, ubicacion, zona },
     });
     return res.status(200).json(site);
   }

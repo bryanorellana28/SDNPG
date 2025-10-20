@@ -35,7 +35,6 @@ model Site {
   clave      String
   ubicacion  String
   zona       String
-  direccion  String
   equipments Equipment[]
 }
 
@@ -111,10 +110,12 @@ enum ServiceType {
 }
 
 model Client {
-  id       Int       @id @default(autoincrement())
-  name     String
-  contact  String?
-  services Service[]
+  id        Int       @id @default(autoincrement())
+  name      String
+  nit       String?
+  contact   String?
+  phone     String?
+  services  Service[]
 }
 
 model Service {
@@ -127,6 +128,8 @@ model Service {
   port        String?
   deviceModel String?
   config      String?
+  locationDescription String @default("")
+  serviceIdentifier  String @default("")
 }
 
 model PortInventory {

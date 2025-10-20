@@ -1,0 +1,10 @@
+ALTER TABLE `Site`
+  DROP COLUMN `direccion`;
+
+ALTER TABLE `Client`
+  ADD COLUMN `nit` VARCHAR(191) NULL,
+  ADD COLUMN `phone` VARCHAR(191) NULL;
+
+ALTER TABLE `Service`
+  ADD COLUMN `locationDescription` VARCHAR(191) NOT NULL DEFAULT '',
+  ADD COLUMN `serviceIdentifier` VARCHAR(191) NOT NULL DEFAULT '';

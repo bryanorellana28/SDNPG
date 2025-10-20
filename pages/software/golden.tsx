@@ -23,6 +23,7 @@ export default function Golden({ role }: { role: string }) {
   const [currentModel, setCurrentModel] = useState('');
   const [version, setVersion] = useState('');
   const [file, setFile] = useState<File | null>(null);
+  const [manageModel, setManageModel] = useState<string | null>(null);
 
   const fetchData = async () => {
     const eq = await fetch('/api/equipos').then(r => r.json());
@@ -35,7 +36,15 @@ export default function Golden({ role }: { role: string }) {
     fetchData();
   }, []);
 
-  const models = Array.from(new Set(equipos.map(e => e.chassis)));
+  const models = Array.from(
+    new Set([
+      ...equipos.map(e => e.chassis).filter(Boolean),
+      ...golden.map(g => g.model),
+    ])
+  )
+    .filter((model): model is string => Boolean(model))
+    .sort((a, b) => a.localeCompare(b));
+  const managedImages = manageModel ? golden.filter(g => g.model === manageModel) : [];
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,67 +75,66 @@ export default function Golden({ role }: { role: string }) {
       <Sidebar role={role} />
       <div className="p-4 flex-grow-1">
         <h2>Golden Images</h2>
-        <div className="d-flex flex-wrap gap-2 mb-3">
-          {models.map(m => {
-            const existing = golden.find(g => g.model === m);
-            return (
-              <div key={m}>
-                <span className="me-2">{m}</span>
-                {!existing ? (
-                  <button
-                    className="btn btn-sm btn-secondary"
-                    data-bs-toggle="offcanvas"
-                    data-bs-target="#uploadGolden"
-                    onClick={() => {
-                      setCurrentModel(m);
-                      setVersion('');
-                    }}
-                  >
-                    Agregar golden image
-                  </button>
-                ) : (
-                  <>
-                    <button
-                      className="btn btn-sm btn-secondary me-2"
-                      data-bs-toggle="offcanvas"
-                      data-bs-target="#uploadGolden"
-                      onClick={() => {
-                        setCurrentModel(m);
-                        setVersion(existing.version || '');
-                      }}
-                    >
-                      Actualizar golden image
-                    </button>
-                    <button className="btn btn-sm btn-danger" onClick={() => handleDelete(existing.id)}>
-                      Eliminar
-                    </button>
-                  </>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
         <div className="card">
           <div className="card-body">
-            <table className="table table-striped">
+            <table className="table table-striped align-middle">
               <thead>
                 <tr>
                   <th>Modelo</th>
-                  <th>Equipos</th>
-                  <th>Versión</th>
-                  <th>Archivo</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {golden.map(g => (
-                  <tr key={g.id}>
-                    <td>{g.model}</td>
-                    <td>{g.count}</td>
-                    <td>{g.version}</td>
-                    <td>{g.filename}</td>
+                {models.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="text-center text-muted">
+                      No hay modelos disponibles para gestionar.
+                    </td>
                   </tr>
-                ))}
+                )}
+                {models.map(model => {
+                  const existing = golden.filter(g => g.model === model);
+                  const current = existing[0];
+                  return (
+                    <tr key={model}>
+                      <td>{model}</td>
+                      <td>
+                        {current ? (
+                          <div>
+                            <div className="fw-semibold">Versión: {current.version || 'N/D'}</div>
+                            <small className="text-muted d-block">Archivo: {current.filename}</small>
+                            <small className="text-muted">Equipos asociados: {current.count}</small>
+                          </div>
+                        ) : (
+                          <span className="text-muted">Sin golden image registrada</span>
+                        )}
+                      </td>
+                      <td>
+                        <button
+                          className="btn btn-sm btn-secondary me-2"
+                          data-bs-toggle="offcanvas"
+                          data-bs-target="#uploadGolden"
+                          onClick={() => {
+                            setCurrentModel(model);
+                            setVersion(current?.version || '');
+                            setFile(null);
+                          }}
+                        >
+                          Agregar golden image
+                        </button>
+                        <button
+                          className="btn btn-sm btn-outline-primary"
+                          data-bs-toggle="offcanvas"
+                          data-bs-target="#manageGolden"
+                          onClick={() => setManageModel(model)}
+                        >
+                          Gestionar golden image
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -153,6 +161,43 @@ export default function Golden({ role }: { role: string }) {
             </div>
             <button className="btn btn-primary" type="submit">Guardar</button>
           </form>
+        </div>
+      </div>
+
+      <div className="offcanvas offcanvas-end" tabIndex={-1} id="manageGolden">
+        <div className="offcanvas-header">
+          <h5 className="offcanvas-title">Gestionar Golden - {manageModel}</h5>
+          <button
+            type="button"
+            className="btn-close"
+            data-bs-dismiss="offcanvas"
+            aria-label="Close"
+            onClick={() => setManageModel(null)}
+          ></button>
+        </div>
+        <div className="offcanvas-body">
+          {manageModel ? (
+            managedImages.length ? (
+              <ul className="list-group">
+                {managedImages.map(img => (
+                  <li key={img.id} className="list-group-item d-flex justify-content-between align-items-start">
+                    <div>
+                      <div className="fw-semibold">{img.filename}</div>
+                      <small className="text-muted d-block">Versión: {img.version || 'N/D'}</small>
+                      <small className="text-muted">SHA256: {img.sha256.slice(0, 12)}...</small>
+                    </div>
+                    <button className="btn btn-sm btn-danger" onClick={() => handleDelete(img.id)}>
+                      Eliminar
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-muted mb-0">No hay golden images registradas para este modelo.</p>
+            )
+          ) : (
+            <p className="text-muted mb-0">Selecciona un modelo para gestionar sus golden images.</p>
+          )}
         </div>
       </div>
     </div>
