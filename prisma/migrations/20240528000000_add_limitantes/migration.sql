@@ -1,0 +1,16 @@
+CREATE TABLE `Limitante` (
+  `id` INTEGER NOT NULL AUTO_INCREMENT,
+  `equipmentId` INTEGER NOT NULL,
+  `name` VARCHAR(191) NOT NULL,
+  `bandwidth` VARCHAR(191) NOT NULL,
+  `port` VARCHAR(191) NOT NULL,
+  `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE INDEX `Limitante_equipmentId_idx` ON `Limitante`(`equipmentId`);
+
+ALTER TABLE `Limitante`
+  ADD CONSTRAINT `Limitante_equipmentId_fkey`
+  FOREIGN KEY (`equipmentId`) REFERENCES `Equipment`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
