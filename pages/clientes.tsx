@@ -7,12 +7,14 @@ import Sidebar from '../components/Sidebar';
 interface Client {
   id: number;
   name: string;
-  contact?: string;
+  nit?: string | null;
+  contact?: string | null;
+  phone?: string | null;
 }
 
 export default function Clientes({ role }: { role: string }) {
   const [clients, setClients] = useState<Client[]>([]);
-  const [form, setForm] = useState({ name: '', contact: '' });
+  const [form, setForm] = useState({ name: '', nit: '', contact: '', phone: '' });
 
   const fetchClients = async () => {
     const res = await fetch('/api/clients');
@@ -35,7 +37,7 @@ export default function Clientes({ role }: { role: string }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
     });
-    setForm({ name: '', contact: '' });
+    setForm({ name: '', nit: '', contact: '', phone: '' });
     fetchClients();
   };
 
@@ -51,14 +53,18 @@ export default function Clientes({ role }: { role: string }) {
           <thead>
             <tr>
               <th>Nombre</th>
+              <th>NIT</th>
               <th>Contacto</th>
+              <th>Teléfono</th>
             </tr>
           </thead>
           <tbody>
             {clients.map(c => (
               <tr key={c.id}>
                 <td>{c.name}</td>
+                <td>{c.nit}</td>
                 <td>{c.contact}</td>
+                <td>{c.phone}</td>
               </tr>
             ))}
           </tbody>
@@ -85,10 +91,28 @@ export default function Clientes({ role }: { role: string }) {
             <div className="mb-2">
               <input
                 className="form-control"
+                name="nit"
+                value={form.nit}
+                onChange={handleChange}
+                placeholder="NIT"
+              />
+            </div>
+            <div className="mb-2">
+              <input
+                className="form-control"
                 name="contact"
                 value={form.contact}
                 onChange={handleChange}
-                placeholder="Contacto"
+                placeholder="Nombre contacto"
+              />
+            </div>
+            <div className="mb-2">
+              <input
+                className="form-control"
+                name="phone"
+                value={form.phone}
+                onChange={handleChange}
+                placeholder="Teléfono"
               />
             </div>
             <button className="btn btn-primary" type="submit">

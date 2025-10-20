@@ -3,6 +3,7 @@ import { parse } from 'cookie';
 import jwt from 'jsonwebtoken';
 import { useEffect, useState } from 'react';
 import Sidebar from '../components/Sidebar';
+import SearchBar from '../components/SearchBar';
 
 interface Client { id: number; name: string }
 interface Equipment {
@@ -24,6 +25,8 @@ interface Service {
   equipment?: Equipment;
   port?: string;
   deviceModel?: string;
+  locationDescription: string;
+  serviceIdentifier: string;
 }
 
 const managedDevices = [
@@ -53,7 +56,10 @@ export default function Servicios({ role }: { role: string }) {
     equipmentId: '',
     portId: '',
     deviceModel: '',
+    serviceIdentifier: '',
+    locationDescription: '',
   });
+  const [search, setSearch] = useState('');
 
   const fetchAll = async () => {
     const [cl, eq, sv] = await Promise.all([
@@ -149,7 +155,15 @@ export default function Servicios({ role }: { role: string }) {
       alert(msg.message || 'No se pudo guardar el servicio.');
       return;
     }
-    setForm({ clientId: '', type: 'CAPA2', equipmentId: '', portId: '', deviceModel: '' });
+    setForm({
+      clientId: '',
+      type: 'CAPA2',
+      equipmentId: '',
+      portId: '',
+      deviceModel: '',
+      serviceIdentifier: '',
+      locationDescription: '',
+    });
     setPorts([]);
     setPortError('');
     fetchAll();
@@ -160,34 +174,66 @@ export default function Servicios({ role }: { role: string }) {
     return normalized.includes('nodo') && !normalized.includes('cliente');
   });
 
+  const filteredServices = services.filter(service => {
+    if (!search.trim()) return true;
+    const term = search.toLowerCase();
+    const values = [
+      service.client?.name || '',
+      service.type || '',
+      service.port || '',
+      service.deviceModel || '',
+      service.locationDescription || '',
+      service.serviceIdentifier || '',
+      service.equipment?.hostname || '',
+      String(service.id),
+    ];
+    return values.some(value => value.toLowerCase().includes(term));
+  });
+
   return (
     <div className="d-flex">
       <Sidebar role={role} />
       <div className="p-4 flex-grow-1">
         <h2>Servicios</h2>
-        <button className="btn btn-primary mb-2" data-bs-toggle="offcanvas" data-bs-target="#addService">
-          Agregar servicio
-        </button>
+        <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+          <SearchBar value={search} onChange={setSearch} />
+          <button className="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#addService">
+            Agregar servicio
+          </button>
+        </div>
         <table className="table">
           <thead>
             <tr>
+              <th>ID Servicio</th>
               <th>Cliente</th>
+              <th>Descripción ubicación</th>
               <th>Tipo</th>
               <th>Detalle</th>
             </tr>
           </thead>
           <tbody>
-            {services.map(s => (
-              <tr key={s.id}>
-                <td>{s.client.name}</td>
-                <td>{s.type}</td>
-                <td>
-                  {s.type === 'CAPA2'
-                    ? `${s.equipment?.hostname || ''} - ${s.port}`
-                    : s.deviceModel}
-                </td>
-              </tr>
-            ))}
+            {filteredServices.map(s => {
+              const detalle =
+                s.type === 'CAPA2'
+                  ? `${s.equipment?.hostname || ''} ${s.port ? `- ${s.port}` : ''}`.trim()
+                  : [
+                      s.deviceModel,
+                      s.equipment ? `Nodo: ${s.equipment.hostname}` : '',
+                      s.port ? `Puerto: ${s.port}` : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' | ');
+
+              return (
+                <tr key={s.id}>
+                  <td>{s.serviceIdentifier}</td>
+                  <td>{s.client.name}</td>
+                  <td>{s.locationDescription}</td>
+                  <td>{s.type}</td>
+                  <td>{detalle}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -214,6 +260,26 @@ export default function Servicios({ role }: { role: string }) {
                 <option value="CAPA2">Servicio Capa 2</option>
                 <option value="GESTIONADO">Servicio Gestionado</option>
               </select>
+            </div>
+            <div className="mb-2">
+              <input
+                className="form-control"
+                name="serviceIdentifier"
+                value={form.serviceIdentifier}
+                onChange={handleChange}
+                placeholder="ID de servicio"
+                required
+              />
+            </div>
+            <div className="mb-3">
+              <input
+                className="form-control"
+                name="locationDescription"
+                value={form.locationDescription}
+                onChange={handleChange}
+                placeholder="Descripción ubicación del servicio"
+                required
+              />
             </div>
             {form.type === 'CAPA2' && (
               <>
@@ -263,16 +329,61 @@ export default function Servicios({ role }: { role: string }) {
               </>
             )}
             {form.type === 'GESTIONADO' && (
-              <div className="mb-2">
-                <select className="form-select" name="deviceModel" value={form.deviceModel} onChange={handleChange} required>
-                  <option value="">Seleccione modelo</option>
-                  {managedDevices.map(m => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <>
+                <div className="mb-2">
+                  <select className="form-select" name="deviceModel" value={form.deviceModel} onChange={handleChange} required>
+                    <option value="">Seleccione modelo</option>
+                    {managedDevices.map(m => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mb-2">
+                  <select
+                    className="form-select"
+                    name="equipmentId"
+                    value={form.equipmentId}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="">Seleccione nodo</option>
+                    {additionalNodes.map(e => (
+                      <option key={e.id} value={e.id}>
+                        {e.hostname}
+                      </option>
+                    ))}
+                  </select>
+                  {!additionalNodes.length && (
+                    <div className="text-warning small mt-1">
+                      No hay nodos disponibles para asignar.
+                    </div>
+                  )}
+                </div>
+                <div className="mb-2">
+                  <select
+                    className="form-select"
+                    name="portId"
+                    value={form.portId}
+                    onChange={handleChange}
+                    disabled={!form.equipmentId || portsLoading || !ports.length}
+                    required
+                  >
+                    <option value="">Seleccione puerto</option>
+                    {ports.map(port => (
+                      <option key={port.id} value={port.id}>
+                        {port.physicalName} ({port.status})
+                      </option>
+                    ))}
+                  </select>
+                  {portsLoading && <div className="form-text">Cargando puertos disponibles...</div>}
+                  {portError && <div className="text-danger small">{portError}</div>}
+                  {!portsLoading && !portError && form.equipmentId && !ports.length && (
+                    <div className="text-warning small">No hay puertos disponibles para asignar.</div>
+                  )}
+                </div>
+              </>
             )}
             <button className="btn btn-primary" type="submit">
               Guardar

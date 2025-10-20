@@ -8,7 +8,7 @@ import Sidebar from '../../components/Sidebar';
 export default function EditSite({ role }: { role: string }) {
   const router = useRouter();
   const { id } = router.query;
-  const [form, setForm] = useState({ nombre: '', clave: '', ubicacion: '', zona: '', direccion: '' });
+  const [form, setForm] = useState({ nombre: '', clave: '', ubicacion: '', zona: '' });
 
   useEffect(() => {
     if (id) {
@@ -38,9 +38,8 @@ export default function EditSite({ role }: { role: string }) {
         <form onSubmit={handleSubmit} className="mb-3">
           <input className="form-control mb-2" name="nombre" value={form.nombre} onChange={handleChange} placeholder="Nombre" required />
           <input className="form-control mb-2" name="clave" value={form.clave} onChange={handleChange} placeholder="Clave" required />
-          <input className="form-control mb-2" name="ubicacion" value={form.ubicacion} onChange={handleChange} placeholder="Ubicación" required />
+          <input className="form-control mb-2" name="ubicacion" value={form.ubicacion} onChange={handleChange} placeholder="Ubicación física" required />
           <input className="form-control mb-2" name="zona" value={form.zona} onChange={handleChange} placeholder="Zona" required />
-          <input className="form-control mb-2" name="direccion" value={form.direccion} onChange={handleChange} placeholder="Dirección" required />
           <button className="btn btn-primary" type="submit">Guardar</button>
         </form>
       </div>

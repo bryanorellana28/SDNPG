@@ -19,7 +19,6 @@ interface SiteDetail {
   nombre: string;
   ubicacion: string | null;
   zona: string | null;
-  direccion: string | null;
   totalEquipments: number;
   nodeCount: number;
   clientCount: number;
@@ -420,7 +419,6 @@ export default function Dashboard({ role }: DashboardProps) {
                           <tr key={item.id}>
                             <td>
                               <div className="fw-semibold">{item.nombre}</div>
-                              {item.direccion && <small className="text-muted">{item.direccion}</small>}
                             </td>
                             <td>{item.zona || '-'}</td>
                             <td>{item.ubicacion || '-'}</td>

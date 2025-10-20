@@ -17,11 +17,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json(sites);
   }
   if (req.method === 'POST') {
-    const { nombre, clave, ubicacion, zona, direccion } = req.body;
-    const existing = await prisma.site.findFirst({ where: { nombre, clave, ubicacion, zona, direccion } });
+    const { nombre, clave, ubicacion, zona } = req.body;
+    const existing = await prisma.site.findFirst({ where: { nombre, clave, ubicacion, zona } });
     if (existing) return res.status(409).json({ message: 'Site already exists' });
     const site = await prisma.site.create({
-      data: { nombre, clave, ubicacion, zona, direccion },
+      data: { nombre, clave, ubicacion, zona },
     });
     return res.status(201).json(site);
   }

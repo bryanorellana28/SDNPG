@@ -18,9 +18,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'POST') {
-    const { name, contact } = req.body;
+    const { name, nit, contact, phone } = req.body;
     if (!name) return res.status(400).json({ message: 'Missing name' });
-    const client = await prisma.client.create({ data: { name, contact } });
+    const client = await prisma.client.create({ data: { name, nit, contact, phone } });
     return res.status(201).json(client);
   }
 
