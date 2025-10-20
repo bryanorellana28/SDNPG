@@ -41,7 +41,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (method === 'DELETE') {
-    await prisma.equipment.delete({ where: { id: eqId } });
+    await prisma.$transaction([
+      prisma.backup.deleteMany({ where: { deviceId: eqId } }),
+      prisma.job.deleteMany({ where: { deviceId: eqId } }),
+      prisma.portInventory.deleteMany({ where: { equipmentId: eqId } }),
+      prisma.limitante.deleteMany({ where: { equipmentId: eqId } }),
+      prisma.service.updateMany({ where: { equipmentId: eqId }, data: { equipmentId: null } }),
+      prisma.equipment.delete({ where: { id: eqId } }),
+    ]);
     return res.status(200).json({ message: 'Deleted' });
   }
 
