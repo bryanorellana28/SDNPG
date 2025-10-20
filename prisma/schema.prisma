@@ -127,7 +127,7 @@ model Service {
   equipmentId Int?
   port        String?
   deviceModel String?
-  config      String?
+  config      String?     @db.LongText
   locationDescription String @default("")
   serviceIdentifier  String @default("")
 }
