@@ -1,0 +1,2 @@
+ALTER TABLE `Service`
+  MODIFY `config` LONGTEXT NULL;
