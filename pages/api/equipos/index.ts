@@ -35,9 +35,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await ssh.connect({ host: ip, username: cred.username, password: cred.password });
       let stdout = '';
       let portsData: { physicalName: string; description: string; status: string }[] = [];
+      let limitantesData: { name: string; bandwidth: string; port: string }[] = [];
       if (type === 'Mikrotik') {
         stdout = (await ssh.execCommand('/system routerboard print')).stdout;
         portsData = await getMikrotikPorts(ssh);
+        limitantesData = await getMikrotikLimitantes(ssh);
       } else {
         stdout = (await ssh.execCommand('show version')).stdout;
       }
@@ -86,6 +88,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           });
         } catch (err) {
           console.error('No se pudo guardar el inventario de puertos', err);
+        }
+      }
+      if (limitantesData.length) {
+        try {
+          await prisma.limitante.createMany({
+            data: limitantesData.map(limitante => ({
+              equipmentId: eq.id,
+              name: limitante.name,
+              bandwidth: limitante.bandwidth,
+              port: limitante.port,
+            })),
+          });
+        } catch (err) {
+          console.error('No se pudo guardar la información de limitantes', err);
         }
       }
       try {
@@ -141,4 +157,60 @@ async function getMikrotikPorts(ssh: NodeSSH) {
   }
 
   return ports;
+}
+
+async function getMikrotikLimitantes(ssh: NodeSSH) {
+  try {
+    const { stdout } = await ssh.execCommand('/queue simple export');
+    const lines = stdout.split(/\r?\n/);
+    const blocks: string[] = [];
+    let current: string[] = [];
+
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line || line.startsWith('#')) {
+        continue;
+      }
+      if (line.startsWith('add')) {
+        if (current.length) {
+          blocks.push(current.join(' '));
+        }
+        current = [line];
+      } else if (current.length) {
+        current.push(line);
+      }
+    }
+
+    if (current.length) {
+      blocks.push(current.join(' '));
+    }
+
+    const cleanValue = (value: string) => value.replace(/\\/g, '').replace(/^"|"$/g, '').trim();
+
+    const limitantes = blocks
+      .map(block => block.replace(/\\\s*/g, ' '))
+      .map(block => block.replace(/=\s+/g, '='))
+      .map(block => block.replace(/\s+/g, ' ').trim())
+      .map(block => {
+        const nameMatch = block.match(/\bname=(".*?"|\S+)/);
+        const bandwidthMatch = block.match(/\bmax-limit=(".*?"|\S+)/);
+        const targetMatch = block.match(/\btarget=(".*?"|\S+)/);
+
+        if (!nameMatch || !bandwidthMatch || !targetMatch) {
+          return null;
+        }
+
+        return {
+          name: cleanValue(nameMatch[1]),
+          bandwidth: cleanValue(bandwidthMatch[1]),
+          port: cleanValue(targetMatch[1]),
+        };
+      })
+      .filter((entry): entry is { name: string; bandwidth: string; port: string } => Boolean(entry));
+
+    return limitantes;
+  } catch (error) {
+    console.error('No se pudieron obtener las limitantes del equipo', error);
+    return [];
+  }
 }

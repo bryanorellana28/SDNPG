@@ -156,8 +156,8 @@ export default function Servicios({ role }: { role: string }) {
   };
 
   const additionalNodes = equipos.filter(eq => {
-    const normalized = eq.networkRole?.toLowerCase() || '';
-    return normalized.includes('nodo') && normalized.includes('adicional');
+    const normalized = (eq.networkRole || '').toLowerCase();
+    return normalized.includes('nodo') && !normalized.includes('cliente');
   });
 
   return (

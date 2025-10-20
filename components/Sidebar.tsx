@@ -159,6 +159,11 @@ export default function Sidebar({ role }: SidebarProps) {
                   Rastreo de clientes
                 </Link>
               </li>
+              <li>
+                <Link href="/operacion/limitantes" className="nav-link link-light ms-3">
+                  Limitantes
+                </Link>
+              </li>
             </ul>
           )}
         </li>
