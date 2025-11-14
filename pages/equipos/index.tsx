@@ -1,9 +1,10 @@
 import { GetServerSideProps } from 'next';
 import { parse } from 'cookie';
 import jwt from 'jsonwebtoken';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Sidebar from '../../components/Sidebar';
 import SearchBar from '../../components/SearchBar';
+import Popup from '../../components/Popup';
 
 interface Equipment {
   id: number;
@@ -27,6 +28,8 @@ interface SiteOption {
   nombre: string;
 }
 
+type PopupState = { message: string; variant: 'success' | 'danger' | 'warning' | 'info'; title?: string } | null;
+
 export default function Equipos({ role }: { role: string }) {
   const [equipos, setEquipos] = useState<Equipment[]>([]);
   const [ip, setIp] = useState('');
@@ -37,7 +40,9 @@ export default function Equipos({ role }: { role: string }) {
   const [search, setSearch] = useState('');
   const [credentials, setCredentials] = useState<Credential[]>([]);
   const [sites, setSites] = useState<SiteOption[]>([]);
-  const [alertMsg, setAlertMsg] = useState<{ type: string; message: string } | null>(null);
+  const [popup, setPopup] = useState<PopupState>(null);
+  const [isAdding, setIsAdding] = useState(false);
+  const [addProgress, setAddProgress] = useState(0);
 
   const fetchEquipos = async () => {
     const res = await fetch('/api/equipos');
@@ -54,7 +59,15 @@ export default function Equipos({ role }: { role: string }) {
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    setIsAdding(true);
+    setAddProgress(5);
+    const interval = setInterval(() => {
+      setAddProgress(prev => {
+        if (prev >= 90) return prev;
+        return prev + 10;
+      });
+    }, 500);
     try {
       const res = await fetch('/api/equipos', {
         method: 'POST',
@@ -70,7 +83,12 @@ export default function Equipos({ role }: { role: string }) {
       });
       clearTimeout(timeoutId);
       if (res.status === 201) {
-        setAlertMsg({ type: 'success', message: 'Equipo agregado con éxito' });
+        setAddProgress(100);
+        setPopup({
+          variant: 'success',
+          message: 'El equipo fue agregado correctamente y sus datos fueron sincronizados.',
+          title: 'Equipo registrado',
+        });
         setIp('');
         setCredentialId('');
         setSiteId('');
@@ -78,34 +96,54 @@ export default function Equipos({ role }: { role: string }) {
         setNetworkRole('Nodo');
         fetchEquipos();
       } else if (res.status === 409) {
-        setAlertMsg({ type: 'warning', message: 'El equipo ya se encuentra en la base de datos' });
+        setPopup({
+          variant: 'warning',
+          message: 'Este equipo ya existe en la base de datos de SDNTELCO.',
+          title: 'Equipo duplicado',
+        });
       } else {
-        setAlertMsg({ type: 'danger', message: 'Error al agregar equipo' });
+        const data = await res.json().catch(() => ({ message: 'Error al agregar equipo' }));
+        setPopup({
+          variant: 'danger',
+          message: data.message || 'Error al agregar equipo',
+          title: 'No se pudo registrar',
+        });
       }
     } catch (err) {
-      setAlertMsg({ type: 'danger', message: 'El equipo no responde, no se pudo agregar' });
+      setPopup({
+        variant: 'danger',
+        message: 'El equipo no responde, no se pudo completar el alta.',
+        title: 'Sin respuesta del equipo',
+      });
+    } finally {
+      clearInterval(interval);
+      clearTimeout(timeoutId);
+      setIsAdding(false);
     }
   };
 
   const handleDelete = async (id: number) => {
     await fetch(`/api/equipos/${id}`, { method: 'DELETE' });
     fetchEquipos();
+    setPopup({
+      variant: 'info',
+      message: 'El equipo fue eliminado de la base de datos.',
+      title: 'Equipo eliminado',
+    });
   };
 
-  const filtered = equipos.filter(e =>
-    Object.values(e).some(v => v && v.toString().toLowerCase().includes(search.toLowerCase()))
+  const filtered = useMemo(
+    () =>
+      equipos.filter(e =>
+        Object.values(e).some(v => v && v.toString().toLowerCase().includes(search.toLowerCase()))
+      ),
+    [equipos, search]
   );
 
   return (
     <div className="d-flex">
       <Sidebar role={role} />
       <div className="p-4 flex-grow-1">
-        {alertMsg && (
-          <div className={`alert alert-${alertMsg.type} alert-dismissible fade show`} role="alert">
-            {alertMsg.message}
-            <button type="button" className="btn-close" onClick={() => setAlertMsg(null)}></button>
-          </div>
-        )}
         <h2>Equipos</h2>
         <div className="d-flex justify-content-between align-items-center mb-3">
           <SearchBar value={search} onChange={setSearch} />
@@ -155,6 +193,25 @@ export default function Equipos({ role }: { role: string }) {
         </div>
         <div className="offcanvas-body">
           <form onSubmit={handleAdd}>
+            {isAdding && (
+              <div className="mb-3">
+                <label className="form-label fw-semibold text-muted">Sincronizando equipo...</label>
+                <div
+                  className="progress"
+                  role="progressbar"
+                  aria-valuenow={addProgress}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                >
+                  <div
+                    className="progress-bar progress-bar-striped progress-bar-animated"
+                    style={{ width: `${addProgress}%` }}
+                  >
+                    {addProgress}%
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="mb-2">
               <input className="form-control" value={ip} onChange={e => setIp(e.target.value)} placeholder="IP equipo" required />
             </div>
@@ -186,10 +243,19 @@ export default function Equipos({ role }: { role: string }) {
                 <option value="Cliente">Cliente</option>
               </select>
             </div>
-            <button className="btn btn-primary" type="submit">Guardar</button>
+            <button className="btn btn-primary" type="submit" disabled={isAdding}>
+              {isAdding ? 'Registrando...' : 'Guardar'}
+            </button>
           </form>
         </div>
       </div>
+      <Popup
+        show={!!popup}
+        onClose={() => setPopup(null)}
+        message={popup?.message || ''}
+        title={popup?.title}
+        variant={popup?.variant || 'info'}
+      />
     </div>
   );
 }

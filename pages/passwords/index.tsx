@@ -79,7 +79,7 @@ export default function Passwords({ role }: { role: string }) {
             {filtered.map(e => (
               <tr key={e.id}>
                 <td>{e.username}</td>
-                <td>{e.password}</td>
+                <td>*****</td>
                 <td>{e.description}</td>
                 <td>
                   <button className="btn btn-sm btn-secondary me-2" onClick={() => handleEdit(e)}>

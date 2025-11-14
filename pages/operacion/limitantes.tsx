@@ -3,6 +3,7 @@ import { parse } from 'cookie';
 import jwt from 'jsonwebtoken';
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
 import Sidebar from '../../components/Sidebar';
+import Popup from '../../components/Popup';
 
 interface Equipment {
   id: number;
@@ -35,9 +36,12 @@ export default function Limitantes({ role }: { role: string }) {
   const [ports, setPorts] = useState<Port[]>([]);
   const [portsLoading, setPortsLoading] = useState(false);
   const [portsError, setPortsError] = useState('');
-  const [formError, setFormError] = useState('');
-  const [formSuccess, setFormSuccess] = useState('');
   const [saving, setSaving] = useState(false);
+  const [popup, setPopup] = useState<{
+    message: string;
+    variant: 'success' | 'danger' | 'warning' | 'info';
+    title?: string;
+  } | null>(null);
   const [form, setForm] = useState({
     equipmentId: '',
     name: '',
@@ -74,14 +78,13 @@ export default function Limitantes({ role }: { role: string }) {
     setLimitantesError('');
     try {
       const res = await fetch(`/api/limitantes?equipmentId=${equipmentId}`);
+      const payload = await res.json();
       if (!res.ok) {
-        const msg = await res.json().catch(() => ({ message: 'No se pudieron obtener las limitantes.' }));
-        setLimitantesError(msg.message || 'No se pudieron obtener las limitantes.');
+        setLimitantesError(payload.message || 'No se pudieron obtener las limitantes.');
         setLimitantes([]);
         return;
       }
-      const data: Limitante[] = await res.json();
-      setLimitantes(data);
+      setLimitantes(payload as Limitante[]);
     } catch (error) {
       setLimitantesError('No se pudieron obtener las limitantes.');
       setLimitantes([]);
@@ -100,13 +103,12 @@ export default function Limitantes({ role }: { role: string }) {
     setPortsError('');
     try {
       const res = await fetch(`/api/ports/${equipmentId}`);
+      const data = await res.json();
       if (!res.ok) {
-        const msg = await res.json().catch(() => ({ message: 'No se pudieron obtener los puertos.' }));
-        setPortsError(msg.message || 'No se pudieron obtener los puertos.');
+        setPortsError(data.message || 'No se pudieron obtener los puertos.');
         setPorts([]);
         return;
       }
-      const data = await res.json();
       const available = (data.ports as Port[]) || [];
       setPorts(available);
     } catch (error) {
@@ -138,23 +140,27 @@ export default function Limitantes({ role }: { role: string }) {
       }
       return { ...prev, [name]: value };
     });
-    setFormError('');
-    setFormSuccess('');
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setFormError('');
-    setFormSuccess('');
 
     if (!form.equipmentId || !form.name || !form.bandwidth || !form.portId) {
-      setFormError('Complete todos los campos para crear la limitante.');
+      setPopup({
+        variant: 'warning',
+        message: 'Complete todos los campos para crear la limitante.',
+        title: 'Información incompleta',
+      });
       return;
     }
 
     const selectedPort = ports.find(p => String(p.id) === form.portId);
     if (!selectedPort) {
-      setFormError('Seleccione un puerto válido.');
+      setPopup({
+        variant: 'danger',
+        message: 'Seleccione un puerto válido.',
+        title: 'Puerto no disponible',
+      });
       return;
     }
 
@@ -172,20 +178,63 @@ export default function Limitantes({ role }: { role: string }) {
       });
       const data = await res.json();
       if (!res.ok) {
-        setFormError(data.message || 'No se pudo crear la limitante.');
+        setPopup({
+          variant: 'danger',
+          message: data.message || 'No se pudo crear la limitante.',
+          title: 'Error al crear limitante',
+        });
         return;
       }
 
-      setFormSuccess('Limitante creada correctamente.');
+      setPopup({
+        variant: 'success',
+        message: `Se creó la limitante ${form.name} correctamente.`,
+        title: 'Limitante creada',
+      });
       setForm({ equipmentId: form.equipmentId, name: '', bandwidth: '', portId: '' });
       loadLimitantes(form.equipmentId);
       if (!selectedEquipment) {
         setSelectedEquipment(form.equipmentId);
       }
     } catch (error) {
-      setFormError('No se pudo crear la limitante.');
+      setPopup({
+        variant: 'danger',
+        message: 'No se pudo crear la limitante.',
+        title: 'Error de conexión',
+      });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async (limitante: Limitante) => {
+    const confirmed = window.confirm(`¿Desea eliminar la limitante ${limitante.name}?`);
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`/api/limitantes?id=${limitante.id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.message || 'No se pudo eliminar la limitante.');
+      }
+      setPopup({
+        variant: 'success',
+        message: `Se eliminó la limitante ${limitante.name}.`,
+        title: 'Limitante eliminada',
+      });
+      const equipmentToReload = limitante.equipmentId ? String(limitante.equipmentId) : selectedEquipment;
+      if (equipmentToReload) {
+        setSelectedEquipment(equipmentToReload);
+        loadLimitantes(equipmentToReload);
+      }
+    } catch (error: any) {
+      setPopup({
+        variant: 'danger',
+        message: error?.message || 'No se pudo eliminar la limitante.',
+        title: 'Error al eliminar',
+      });
     }
   };
 
@@ -254,6 +303,7 @@ export default function Limitantes({ role }: { role: string }) {
                   <th>Nombre</th>
                   <th>Ancho de banda</th>
                   <th>Puerto</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -262,6 +312,14 @@ export default function Limitantes({ role }: { role: string }) {
                     <td>{limitante.name}</td>
                     <td>{limitante.bandwidth}</td>
                     <td>{limitante.port}</td>
+                    <td>
+                      <button
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={() => handleDelete(limitante)}
+                      >
+                        Eliminar
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -358,15 +416,19 @@ export default function Limitantes({ role }: { role: string }) {
               {portsError && <div className="text-danger small">{portsError}</div>}
             </div>
 
-            {formError && <div className="alert alert-danger">{formError}</div>}
-            {formSuccess && <div className="alert alert-success">{formSuccess}</div>}
-
             <button className="btn btn-primary" type="submit" disabled={saving}>
               {saving ? 'Creando...' : 'Crear limitante'}
             </button>
           </form>
         </div>
       </div>
+      <Popup
+        show={!!popup}
+        onClose={() => setPopup(null)}
+        message={popup?.message || ''}
+        title={popup?.title}
+        variant={popup?.variant || 'info'}
+      />
     </div>
   );
 }
