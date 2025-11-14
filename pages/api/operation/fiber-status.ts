@@ -51,7 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const ssh = new NodeSSH();
   const sanitizedInterface = interfaceName.replace(/"/g, '').trim();
-  const command = `/interface ethernet print detail where name="${sanitizedInterface}"`;
+  const command = `/interface ethernet monitor "${sanitizedInterface}" once without-paging`;
 
   try {
     await ssh.connect({

@@ -264,7 +264,10 @@ export default function Dashboard({ role }: DashboardProps) {
             <div className="row g-4 mb-4">
               <div className="col-12 col-md-6 col-xl-3">
                 <div className="card shadow-sm border-0 h-100">
-                  <div className="card-body">
+                  <div
+                    className="card-body d-flex flex-column justify-content-between"
+                    style={{ minHeight: '160px' }}
+                  >
                     <h6 className="text-uppercase text-muted">Sitios registrados</h6>
                     <h3 className="fw-bold mb-0">{dashboardData?.summary.totalSites ?? 0}</h3>
                     <small className="text-muted">{dashboardData?.summary.totalClients ?? 0} clientes vinculados</small>
@@ -273,7 +276,10 @@ export default function Dashboard({ role }: DashboardProps) {
               </div>
               <div className="col-12 col-md-6 col-xl-3">
                 <div className="card shadow-sm border-0 h-100">
-                  <div className="card-body">
+                  <div
+                    className="card-body d-flex flex-column justify-content-between"
+                    style={{ minHeight: '160px' }}
+                  >
                     <h6 className="text-uppercase text-muted">Equipos monitoreados</h6>
                     <h3 className="fw-bold mb-0">{dashboardData?.summary.totalEquipments ?? 0}</h3>
                     <small className="text-muted">Información consolidada desde inventario</small>
@@ -282,7 +288,10 @@ export default function Dashboard({ role }: DashboardProps) {
               </div>
               <div className="col-12 col-md-6 col-xl-3">
                 <div className="card shadow-sm border-0 h-100">
-                  <div className="card-body">
+                  <div
+                    className="card-body d-flex flex-column justify-content-between"
+                    style={{ minHeight: '160px' }}
+                  >
                     <h6 className="text-uppercase text-muted">Servicios activos</h6>
                     <h3 className="fw-bold mb-0">{dashboardData?.summary.totalServices ?? 0}</h3>
                     <small className="text-muted">Distribución por tipo según catálogo</small>
@@ -291,7 +300,10 @@ export default function Dashboard({ role }: DashboardProps) {
               </div>
               <div className="col-12 col-md-6 col-xl-3">
                 <div className="card shadow-sm border-0 h-100">
-                  <div className="card-body">
+                  <div
+                    className="card-body d-flex flex-column justify-content-between"
+                    style={{ minHeight: '160px' }}
+                  >
                     <h6 className="text-uppercase text-muted">Respaldos registrados</h6>
                     <h3 className="fw-bold mb-0">{dashboardData?.summary.totalBackups ?? 0}</h3>
                     <small className="text-muted">Histórico cargado desde la base de datos</small>
@@ -303,12 +315,15 @@ export default function Dashboard({ role }: DashboardProps) {
             <div className="row g-4 mb-4">
               <div className="col-12 col-lg-6">
                 <div className="card shadow-sm border-0 h-100">
-                  <div className="card-body">
+                  <div
+                    className="card-body d-flex flex-column"
+                    style={{ minHeight: '360px' }}
+                  >
                     <div className="d-flex justify-content-between align-items-center mb-3">
                       <h5 className="card-title mb-0">Inventario por sitio</h5>
                       <span className="badge bg-primary-subtle text-primary">Equipos</span>
                     </div>
-                    <div className="position-relative" style={{ minHeight: '280px' }}>
+                    <div className="position-relative flex-grow-1" style={{ minHeight: '260px' }}>
                       {dashboardData && dashboardData.equipmentBySite.length > 0 ? (
                         <canvas ref={sitesChartRef} />
                       ) : (
@@ -320,12 +335,15 @@ export default function Dashboard({ role }: DashboardProps) {
               </div>
               <div className="col-12 col-lg-6">
                 <div className="card shadow-sm border-0 h-100">
-                  <div className="card-body">
+                  <div
+                    className="card-body d-flex flex-column"
+                    style={{ minHeight: '360px' }}
+                  >
                     <div className="d-flex justify-content-between align-items-center mb-3">
                       <h5 className="card-title mb-0">Distribución por rol</h5>
                       <span className="badge bg-info-subtle text-info">Roles</span>
                     </div>
-                    <div className="position-relative" style={{ minHeight: '280px' }}>
+                    <div className="position-relative flex-grow-1" style={{ minHeight: '260px' }}>
                       {dashboardData && dashboardData.equipmentByRole.length > 0 ? (
                         <canvas ref={rolesChartRef} />
                       ) : (
@@ -340,12 +358,15 @@ export default function Dashboard({ role }: DashboardProps) {
             <div className="row g-4 mb-4">
               <div className="col-12 col-lg-6">
                 <div className="card shadow-sm border-0 h-100">
-                  <div className="card-body">
+                  <div
+                    className="card-body d-flex flex-column"
+                    style={{ minHeight: '360px' }}
+                  >
                     <div className="d-flex justify-content-between align-items-center mb-3">
                       <h5 className="card-title mb-0">Equipos por tipo</h5>
                       <span className="badge bg-success-subtle text-success">Inventario</span>
                     </div>
-                    <div className="position-relative" style={{ minHeight: '280px' }}>
+                    <div className="position-relative flex-grow-1" style={{ minHeight: '260px' }}>
                       {dashboardData && dashboardData.equipmentByType.length > 0 ? (
                         <canvas ref={typesChartRef} />
                       ) : (
@@ -357,12 +378,15 @@ export default function Dashboard({ role }: DashboardProps) {
               </div>
               <div className="col-12 col-lg-6">
                 <div className="card shadow-sm border-0 h-100">
-                  <div className="card-body">
+                  <div
+                    className="card-body d-flex flex-column"
+                    style={{ minHeight: '360px' }}
+                  >
                     <div className="d-flex justify-content-between align-items-center mb-3">
                       <h5 className="card-title mb-0">Respaldos diarios</h5>
                       <span className="badge bg-warning-subtle text-warning">Backups</span>
                     </div>
-                    <div className="position-relative" style={{ minHeight: '280px' }}>
+                    <div className="position-relative flex-grow-1" style={{ minHeight: '260px' }}>
                       {dashboardData && dashboardData.backupsByDate.length > 0 ? (
                         <canvas ref={backupsChartRef} />
                       ) : (
@@ -375,14 +399,20 @@ export default function Dashboard({ role }: DashboardProps) {
             </div>
 
             <div className="card shadow-sm border-0 mb-4">
-              <div className="card-body">
+              <div
+                className="card-body d-flex flex-column"
+                style={{ minHeight: '320px' }}
+              >
                 <h5 className="card-title">Servicios por tipo</h5>
                 <p className="text-muted">Resumen de servicios según la clasificación almacenada en la base de datos.</p>
                 {dashboardData && dashboardData.servicesByType.length > 0 ? (
                   <div className="row g-3">
                     {dashboardData.servicesByType.map((service) => (
                       <div className="col-6 col-md-3" key={service.label}>
-                        <div className="bg-light rounded-3 p-3 text-center h-100">
+                        <div
+                          className="bg-light rounded-3 p-3 text-center h-100 d-flex flex-column justify-content-center"
+                          style={{ minHeight: '140px' }}
+                        >
                           <h6 className="text-uppercase text-muted small mb-1">{service.label}</h6>
                           <span className="fw-bold fs-4">{service.count}</span>
                         </div>
