@@ -5,6 +5,7 @@ import { NodeSSH } from 'node-ssh';
 import prisma from '../../../lib/prisma';
 
 const DEFAULT_QUEUE = 'hotspot-default/hotspot-default';
+const cleanValue = (value: string) => value.replace(/"/g, '').trim();
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const cookies = parse(req.headers.cookie || '');
@@ -53,8 +54,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const ssh = new NodeSSH();
-    const clean = (value: string) => value.replace(/"/g, '').trim();
-    const queueCommand = `/queue simple add max-limit=${clean(bandwidth)} name="${clean(name)}" queue=${DEFAULT_QUEUE} target=${clean(port)}`;
+    const queueCommand = `/queue simple add max-limit=${cleanValue(bandwidth)} name="${cleanValue(name)}" queue=${DEFAULT_QUEUE} target=${cleanValue(port)}`;
 
     try {
       await ssh.connect({
@@ -71,9 +71,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const created = await prisma.limitante.create({
         data: {
           equipmentId: Number(equipmentId),
-          name: clean(name),
-          bandwidth: clean(bandwidth),
-          port: clean(port),
+          name: cleanValue(name),
+          bandwidth: cleanValue(bandwidth),
+          port: cleanValue(port),
         },
       });
 
@@ -85,6 +85,62 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   }
 
-  res.setHeader('Allow', 'GET,POST');
+  if (req.method === 'DELETE') {
+    const idParam = req.query.id ?? req.body?.id;
+    const limitanteId = Number(idParam);
+    if (!Number.isInteger(limitanteId) || limitanteId <= 0) {
+      return res.status(400).json({ message: 'Identificador de limitante inválido.' });
+    }
+
+    const limitante = await prisma.limitante.findUnique({
+      where: { id: limitanteId },
+      include: {
+        equipment: {
+          include: { credential: true },
+        },
+      },
+    });
+
+    if (!limitante) {
+      return res.status(404).json({ message: 'Limitante no encontrada.' });
+    }
+
+    if (!limitante.equipment) {
+      return res.status(400).json({ message: 'La limitante no tiene un equipo asociado.' });
+    }
+
+    if (limitante.equipment.type !== 'Mikrotik') {
+      return res.status(400).json({ message: 'Solo se pueden eliminar limitantes en equipos Mikrotik.' });
+    }
+
+    if (!limitante.equipment.credential) {
+      return res.status(400).json({ message: 'El equipo asociado no cuenta con credenciales.' });
+    }
+
+    const ssh = new NodeSSH();
+    const removeCommand = `/queue simple remove [find name="${cleanValue(limitante.name)}"]`;
+
+    try {
+      await ssh.connect({
+        host: limitante.equipment.ip,
+        username: limitante.equipment.credential.username,
+        password: limitante.equipment.credential.password,
+      });
+
+      const { stderr } = await ssh.execCommand(removeCommand);
+      if (stderr && stderr.trim()) {
+        throw new Error(stderr.trim());
+      }
+
+      await prisma.limitante.delete({ where: { id: limitanteId } });
+      return res.status(200).json({ message: 'Limitante eliminada correctamente.' });
+    } catch (error: any) {
+      return res.status(500).json({ message: error?.message || 'No se pudo eliminar la limitante.' });
+    } finally {
+      ssh.dispose();
+    }
+  }
+
+  res.setHeader('Allow', 'GET,POST,DELETE');
   return res.status(405).end('Method Not Allowed');
 }

@@ -26,7 +26,7 @@ export default function Sidebar({ role }: SidebarProps) {
         href="/dashboard"
         className="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none"
       >
-        <span className="fs-4">SDNPG</span>
+        <span className="fs-4">SDNTELCO</span>
       </Link>
       <hr className="border-secondary" />
       <ul className="nav nav-pills flex-column mb-auto">
@@ -162,6 +162,11 @@ export default function Sidebar({ role }: SidebarProps) {
               <li>
                 <Link href="/operacion/limitantes" className="nav-link link-light ms-3">
                   Limitantes
+                </Link>
+              </li>
+              <li>
+                <Link href="/operacion/estados-fibra" className="nav-link link-light ms-3">
+                  Estados de fibra
                 </Link>
               </li>
             </ul>
