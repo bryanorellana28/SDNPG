@@ -169,6 +169,11 @@ export default function Sidebar({ role }: SidebarProps) {
                   Estados de fibra
                 </Link>
               </li>
+              <li>
+                <Link href="/operacion/logs" className="nav-link link-light ms-3">
+                  Logs
+                </Link>
+              </li>
             </ul>
           )}
         </li>
